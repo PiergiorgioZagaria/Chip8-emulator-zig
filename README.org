@@ -1,0 +1,34 @@
+* A chip8 emulator (interpreter) written in zig
+** TODOS
+- [ ] Debugging
+- [X] Sound
+- [ ] All opcodes working (FX33) doesn't work according to c8_test and test_opcode
+  
+** Games working
+- [-] Pong
+- [X] Tetris
+- [X] Cave
+- [ ] Tank
+
+*** Pong
+Press 1 and Q to move p1 and 4 and R to move p2.
+Currently p1 can't score.
+
+*** Tetris
+Press W to move left, E to move right, Q to rotate, S to move down faster
+
+*** Cave
+You have to get to the exit without crashing.
+Press 2 to go up, Q to go left, E to go right and S to go down
+
+*** Tank
+Currently not working
+
+** Packages used
+- [[https://github.com/Hejsil/zig-clap][zig-clap]]
+- [[https://github.com/MasterQ32/SDL.zig][SDL.zig]]
+
+** The roms were taken from
+- test-opcode.ch8 [[https://github.com/corax89/chip8-test-rom]]
+- BC_test.ch8, CAVE, Maze, PONG, TANK, TETRIS [[https://github.com/cj1128/chip8-emulator/tree/master/rom]]
+- Chipquarium, Heart monitor, morse code [[https://github.com/mattmikolay/chip-8]]
