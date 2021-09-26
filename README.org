@@ -2,17 +2,16 @@
 ** TODOS
 - [ ] Debugging
 - [X] Sound
-- [ ] All opcodes working (FX33) doesn't work according to c8_test and test_opcode
+- [X] All opcodes working
   
 ** Games working
-- [-] Pong
+- [X] Pong
 - [X] Tetris
 - [X] Cave
-- [ ] Tank
+- [X] Tank
 
 *** Pong
 Press 1 and Q to move p1 and 4 and R to move p2.
-Currently p1 can't score.
 
 *** Tetris
 Press W to move left, E to move right, Q to rotate, S to move down faster
@@ -22,7 +21,7 @@ You have to get to the exit without crashing.
 Press 2 to go up, Q to go left, E to go right and S to go down
 
 *** Tank
-Currently not working
+Destroy the enemy, press W to shoot, Q to move left, E to move right, 2 to move down and S to move up
 
 ** Packages used
 - [[https://github.com/Hejsil/zig-clap][zig-clap]]

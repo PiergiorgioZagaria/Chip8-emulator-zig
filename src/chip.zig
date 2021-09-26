@@ -69,6 +69,10 @@ pub const Chip = struct {
                 }
             },
             0x10 => {
+                // if (self.pc - 2 == opcode & 0x0fff) {
+                //     std.log.err("Infinte loop\n", .{});
+                //     std.process.exit(1);
+                // }
                 self.pc = opcode & 0x0fff;
                 std.debug.print("Set pc to {x}\n", .{opcode & 0x0fff});
             },
@@ -234,13 +238,13 @@ pub const Chip = struct {
                         self.memory[self.ir] = tmp / 100;
                         self.memory[self.ir + 1] = (tmp / 10) % 10;
                         self.memory[self.ir + 2] = tmp % 10;
-                        std.debug.print("Convert Binary to decimal and store in memory at I", .{});
+                        std.debug.print("Convert Binary to decimal and store in memory at I\n", .{});
                     },
                     0x55 => {
                         var i: u8 = 0;
                         var x: u8 = @truncate(u8, (opcode >> 8) & 0x0f);
                         while (i <= x) : (i += 1) {
-                            self.memory[self.ir + i] = self.V[x];
+                            self.memory[self.ir + i] = self.V[i];
                         }
                         // self.ir += i;
                         std.debug.print("Copy registers to memory, WARNING AMBIGUOUS\n", .{});
@@ -249,7 +253,7 @@ pub const Chip = struct {
                         var i: u8 = 0;
                         var x: u8 = @truncate(u8, (opcode >> 8) & 0x0f);
                         while (i <= x) : (i += 1) {
-                            self.V[x] = self.memory[self.ir + i];
+                            self.V[i] = self.memory[self.ir + i];
                         }
                         // self.ir += i;
                         std.debug.print("Load memory to registers, WARNING AMBIGUOUS\n", .{});

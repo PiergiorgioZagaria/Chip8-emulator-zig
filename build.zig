@@ -22,6 +22,6 @@ pub fn build(b: *Builder) !void {
     const run_emu = emu.run();
     run_emu.step.dependOn(b.getInstallStep());
 
-    const run_emu_step = b.step("run", "Runs the chip-8 emulator for the SDL2 wrapper library");
+    const run_emu_step = b.step("run", "Runs the chip-8 emulator");
     run_emu_step.dependOn(&run_emu.step);
 }
