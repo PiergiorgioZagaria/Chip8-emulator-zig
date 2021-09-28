@@ -1,6 +1,10 @@
 * A chip8 emulator (interpreter) written in zig
+** Usage
+Build using =zig build -Drelease-fast= or without release fast, than run =./zig-out/bin/emu <PATH TO ROM>=
+
 ** TODOS
 - [ ] Debugging
+- [ ] The emulator is too fast? The screen flickers? Maybe use Texture instead of rectangles?
 - [X] Sound
 - [X] All opcodes working
   

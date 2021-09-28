@@ -14,31 +14,31 @@ const Chip = @import("chip.zig").Chip;
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(page_allocator);
     defer arena.deinit();
-    var scene = Scene.PlayingScene;
-    var chip: Chip = try parseArguments(&scene);
+    var scene = Scene.PlayingScene; // Maybe implement More scenes?
+    var chip: Chip = try parseArguments();
 
     var app = App{};
     app.scene = scene;
     try app.initSDLdefault(&arena.allocator);
     defer app.deinitSDL();
 
-    // var display_thread = try std.Thread.spawn(.{}, displayThread, .{ &app, &chip });
-    // defer display_thread.join();
+    chip.keys = &app.keys;
+
     while (!app.quit) {
         switch (app.scene) {
             .PlayingScene => {
                 try runChip(&chip, &app);
             },
-            else => {
-                std.debug.warn("Not implemented yet.\n", .{});
-                std.process.exit(1);
-            },
+            // else => {
+            //     std.debug.warn("Not implemented yet.\n", .{});
+            //     std.process.exit(1);
+            // },
         }
         app.change_scene = false;
     }
 }
 
-fn parseArguments(scene: *Scene) !Chip {
+fn parseArguments() !Chip {
     // First we specify what parameters our program can take.
     // We can use `parseParam` to parse a string to a `Param(Help)`
     const params = comptime [_]clap.Param(clap.Help){
@@ -62,17 +62,19 @@ fn parseArguments(scene: *Scene) !Chip {
         return undefined;
     } else if (args.option("--file")) |f| {
         return Chip.init(f) catch |err| {
-            scene.* = Scene.StartingScene;
+            // scene.* = Scene.StartingScene;
             std.log.err("Caught {} during initialization.\n", .{err});
             try clap.help(std.io.getStdErr().writer(), &params);
+            std.process.exit(1);
             return undefined;
         };
     } else if (args.positionals().len == 1) {
         for (args.positionals()) |f| {
             return Chip.init(f) catch |err| {
-                scene.* = Scene.StartingScene;
+                // scene.* = Scene.StartingScene;
                 std.log.err("Caught {} during initialization.\n", .{err});
                 try clap.help(std.io.getStdErr().writer(), &params);
+                std.process.exit(1);
                 return undefined;
             };
         }
@@ -93,92 +95,51 @@ fn parseArguments(scene: *Scene) !Chip {
 }
 
 fn runChip(chip: *Chip, app: *App) !void {
-    var before = std.time.milliTimestamp();
-    var delta: i64 = undefined;
-    var now: i64 = undefined;
+    var render_tick: usize = 0;
+    var timer_tick: usize = SDL.getTicks();
+
+    var texture: SDL.Texture = try SDL.createTexture(app.renderer, SDL.Texture.Format.abgr8888, SDL.Texture.Access.streaming, 64, 32);
 
     while (!app.change_scene) {
-        app.handleInput();
-        chip.keys = app.keys;
+        if (SDL.getTicks() - timer_tick >= 16) {
+            timer_tick = SDL.getTicks();
+            if (chip.delay_timer > 0) {
+                chip.delay_timer -= 1;
+            }
 
+            if (chip.sound_timer > 0) {
+                chip.sound_timer -= 1;
+            }
+        }
+
+        app.handleInput();
         // Return to StartingScene and display error
         chip.cycle() catch |err| {
             std.log.err("Caught {} during chip execution\n", .{err});
             app.quit_func();
         };
+        SDL.delay(1);
 
-        // TODO better sound?
-        if (chip.sound_timer > 0) {
-            app.beep(1);
-        }
+        if (SDL.getTicks() - render_tick >= 16) {
+            if (chip.sound_timer > 0) {
+                app.beep(1);
+            }
 
-        if (chip.update_display) {
-            chip.update_display = false;
             try app.renderer.setColorRGB(0, 0, 0);
             try app.renderer.clear();
 
-            try app.renderer.setColorRGB(0xff, 0xff, 0xff);
-            for (chip.display) |val, i| {
-                if (val) {
-                    try app.renderer.fillRect(SDL.Rectangle{ .x = @intCast(c_int, (i % 64) * 10), .y = @intCast(c_int, (i / 64) * 10), .width = 9, .height = 9 });
-                }
-            }
+            try texture.update(std.mem.sliceAsBytes(chip.display[0..]), 64 * 4, null);
+            try app.renderer.copy(texture, null, null);
+
+            // try app.renderer.setColorRGB(0xff, 0xff, 0xff);
+            // for (chip.display) |val, i| {
+            //     if (val) {
+            //         try app.renderer.fillRect(SDL.Rectangle{ .x = @intCast(c_int, (i % 64) * 10), .y = @intCast(c_int, (i / 64) * 10), .width = 9, .height = 9 });
+            //     }
+            // }
 
             app.renderer.present();
-        }
-
-        // TODO handle update time better?
-        now = std.time.milliTimestamp();
-        delta = now - before;
-        before = now;
-        if (delta <= 16) {
-            std.time.sleep(@bitCast(u64, (16 - delta) * 1000));
-        } else {
-            std.log.warn("Under 60 FPS, FPS: {}\n", .{@divFloor(1000, delta)});
-            std.log.warn("Delta: {}\n", .{delta});
-        }
-    }
-}
-
-fn displayThread(app: *App, chip: *Chip) !void {
-    while (!app.quit) {
-        switch (app.scene) {
-            .PlayingScene => {
-                try displayChip(chip, app);
-            },
-            else => {
-                std.debug.warn("Not implemented yet.\n", .{});
-                std.process.exit(1);
-            },
-        }
-    }
-}
-
-fn displayChip(chip: *Chip, app: *const App) !void {
-    var before = std.time.milliTimestamp();
-    var delta: i64 = undefined;
-    var now: i64 = undefined;
-    while (!app.change_scene) {
-        if (chip.update_display) {
-            chip.update_display = false;
-            try app.renderer.setColorRGB(0, 0, 0);
-            try app.renderer.clear();
-
-            try app.renderer.setColorRGB(0xff, 0xff, 0xff);
-            for (chip.display) |val, i| {
-                if (val) {
-                    try app.renderer.fillRect(SDL.Rectangle{ .x = @intCast(c_int, (i % 64) * 10), .y = @intCast(c_int, (i / 64) * 10), .width = 9, .height = 9 });
-                }
-            }
-
-            app.renderer.present();
-        }
-        // TODO handle update time better?
-        now = std.time.milliTimestamp();
-        delta = now - before;
-        before = now;
-        if (delta <= 16) {
-            std.time.sleep(@bitCast(u64, (16 - delta) * 1000));
+            render_tick = SDL.getTicks();
         }
     }
 }

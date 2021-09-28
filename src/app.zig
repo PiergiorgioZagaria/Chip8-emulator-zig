@@ -6,10 +6,14 @@ const WINDOW_WIDTH = 640;
 const WINDOW_HEIGHT = 320;
 
 pub const Scene = enum {
-    /// Display a StartingScene to choose wich exe to run or to go to settings scene
-    StartingScene,
-    /// Display settings
-    SettingsScene,
+    // Display a StartingScene to choose wich exe to run or to go to settings scene
+    // MAYBE
+    // StartingScene,
+
+    // Display settings
+    // MAYBE
+    //SettingsScene,
+
     /// Generic chip executing scene
     PlayingScene,
 };

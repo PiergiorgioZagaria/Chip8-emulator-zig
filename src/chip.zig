@@ -26,15 +26,16 @@ pub const Chip = struct {
         0x00, // For format
     } ++ [_]u8{0} ** 3935, // 4kB Ram memory
     // The first CHIP-8 interpreter (on the COSMAC VIP computer) was also located in RAM, from address 000 to 1FF. It would expect a CHIP-8 program to be loaded into memory after it, starting at address 200 (512 in decimal). Although modern interpreters are not in the same memory space, you should do the same to be able to run the old programs; you can just leave the initial space empty, except for the font.
-    display: [2048]bool = [_]bool{false} ** 2048, // A 64 X 32 pixel monochrome display
-    update_display: bool = true,
+    // display: [2048]bool = [_]bool{false} ** 2048, // A 64 X 32 pixel monochrome display
+    display: [2048]u32 = [_]u32{0} ** 2048,
+    // update_display: bool = true,
     pc: u16 = 0x200, // A program counter, points to the instruction to exec, can only address 12 bits (4096)
     ir: u16 = 0, // Index register (I), point at locations in memory, can only address 12 bits (4096)
     stack: Stack = Stack{}, // Used to call subroutines/functions
     delay_timer: u8 = 0, //  delay timer which is decremented at a rate of 60 Hz (60 times per second) until it reaches 0
     sound_timer: u8 = 0, // which functions like the delay timer, but which also gives off a beeping sound as long as it’s not 0
     V: [16]u8 = [_]u8{0} ** 16, // general-purpose variable registers numbered 0 through F, F is also used as a flag register; many instructions will set it to either 1 or 0 based on some rule, for example using it as a carry flag
-    keys: [16]bool = [_]bool{false} ** 16, // The keys go from 0 to F
+    keys: []bool = undefined, // The keys go from 0 to F, assigned once in main()
     // 1 2 3 4 - Q W E R - A S D F - Z X C V : KEYS
     // 1 2 3 C - 4 5 6 D - 7 8 9 E - A 0 B F : INDEX
 
@@ -48,19 +49,20 @@ pub const Chip = struct {
         var opcode: u16 = @as(u16, self.memory[self.pc]) << 8 | self.memory[self.pc + 1];
         std.debug.print("executing: {x}\n", .{opcode});
         self.pc += 2;
+
         if (self.delay_timer > 0) {
             self.delay_timer -= 1;
         }
         if (self.sound_timer > 0) {
             self.sound_timer -= 1;
         }
-        // TODO FX33 doesn't work?
+
         switch (opcode >> 8 & 0xf0) {
             0x00 => {
                 if (opcode == 0x00e0) {
                     self.clear_screen();
                     std.debug.print("Clear screen\n", .{});
-                    self.update_display = true;
+                    // self.update_display = true;
                 } else if (opcode == 0x00ee) {
                     self.pc = self.stack.pop();
                     std.debug.print("Return from subroutine\n", .{});
@@ -182,7 +184,7 @@ pub const Chip = struct {
             0xD0 => {
                 std.debug.print("Draw Sprite\n", .{});
                 self.print_sprite(opcode);
-                self.update_display = true;
+                // self.update_display = true;
             },
             0xE0 => {
                 if (opcode & 0x00ff == 0x9e) {
@@ -266,7 +268,8 @@ pub const Chip = struct {
     }
 
     fn clear_screen(self: *Chip) void {
-        self.display = [_]bool{false} ** 2048;
+        // self.display = [_]bool{false} ** 2048;
+        self.display = [_]u32{0} ** 2048;
     }
 
     fn print_sprite(self: *Chip, opcode: u16) void {
@@ -286,11 +289,11 @@ pub const Chip = struct {
                     break;
                 }
                 if ((@as(u16, self.memory[self.ir + i]) >> (7 - j) & 1) == 1) {
-                    if (self.display[x + j + (y + i) * 64]) {
+                    if (self.display[x + j + (y + i) * 64] != 0) {
                         self.V[0xf] = 1;
-                        self.display[x + j + (y + i) * 64] = false;
+                        self.display[x + j + (y + i) * 64] = 0;
                     } else {
-                        self.display[x + j + (y + i) * 64] = true;
+                        self.display[x + j + (y + i) * 64] = 0xffffffff;
                     }
                 }
             }
