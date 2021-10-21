@@ -1,30 +1,15 @@
 const std = @import("std");
-// const SDL = @import("sdl2"); // TODO use this one for complete project
-const SDL = @import("sdl/wrapper/sdl.zig");
+const SDL = @import("sdl2"); // TODO use this one for complete project
+// const SDL = @import("sdl/wrapper/sdl.zig");
 
 const WINDOW_WIDTH = 640;
 const WINDOW_HEIGHT = 320;
-
-pub const Scene = enum {
-    // Display a StartingScene to choose wich exe to run or to go to settings scene
-    // MAYBE
-    // StartingScene,
-
-    // Display settings
-    // MAYBE
-    //SettingsScene,
-
-    /// Generic chip executing scene
-    PlayingScene,
-};
 
 pub const App = struct {
     /// Handle to the sdl renderer, used to draw to the screen
     renderer: SDL.Renderer = undefined,
     /// Handle to the sdl window, should only be used in app.zig
     window: SDL.Window = undefined,
-
-    scene: Scene = undefined,
 
     // Audio
     audio_device: SDL.c.SDL_AudioDeviceID = undefined,
@@ -34,7 +19,6 @@ pub const App = struct {
     allocator: *std.mem.Allocator = undefined,
 
     quit: bool = false,
-    change_scene: bool = false,
 
     /// The Chip-8 inputs, the layout is described in chip.zig
     keys: [16]bool = [_]bool{false} ** 16,
@@ -162,12 +146,6 @@ pub const App = struct {
 
     pub fn quit_func(self: *App) void {
         self.quit = true;
-        self.change_scene = true;
-    }
-    /// You have to manually change scene, move scene management to engine
-    pub fn change_scene_func(self: *App, scene: Scene) void {
-        self.change_scene = true;
-        self.scene = scene;
     }
 
     /// Il volume deve essere nell'intorno [1 , 0]

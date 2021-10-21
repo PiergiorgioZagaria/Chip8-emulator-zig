@@ -1,41 +1,32 @@
 const std = @import("std");
-// const SDL = @import("sdl2"); // TODO use this one for complete project
-const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
+const SDL = @import("sdl2"); // TODO use this one for complete project
+// const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
 const clap = @import("clap/clap.zig");
 var page_allocator = std.heap.page_allocator;
 
 /// The "engine"
 const App = @import("app.zig").App;
-const Scene = @import("app.zig").Scene;
 /// The emulated device
 const Chip = @import("chip.zig").Chip;
+
+//                 a b g r
+const FG_COLOR = 0xff0000ff;
+const BG_COLOR = 0xff000000;
 
 // TODO Add debugging, change window size, emulator on the left, registers on the right
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(page_allocator);
     defer arena.deinit();
-    var scene = Scene.PlayingScene; // Maybe implement More scenes?
     var chip: Chip = try parseArguments();
 
     var app = App{};
-    app.scene = scene;
     try app.initSDLdefault(&arena.allocator);
     defer app.deinitSDL();
 
-    chip.keys = &app.keys;
+    // chip.keys = &app.keys;
+    chip.set_chip_keys(&app.keys);
 
-    while (!app.quit) {
-        switch (app.scene) {
-            .PlayingScene => {
-                try runChip(&chip, &app);
-            },
-            // else => {
-            //     std.debug.warn("Not implemented yet.\n", .{});
-            //     std.process.exit(1);
-            // },
-        }
-        app.change_scene = false;
-    }
+    try runChip(&chip, &app);
 }
 
 fn parseArguments() !Chip {
@@ -61,8 +52,7 @@ fn parseArguments() !Chip {
         std.process.exit(0);
         return undefined;
     } else if (args.option("--file")) |f| {
-        return Chip.init(f) catch |err| {
-            // scene.* = Scene.StartingScene;
+        return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
             std.log.err("Caught {} during initialization.\n", .{err});
             try clap.help(std.io.getStdErr().writer(), &params);
             std.process.exit(1);
@@ -70,8 +60,7 @@ fn parseArguments() !Chip {
         };
     } else if (args.positionals().len == 1) {
         for (args.positionals()) |f| {
-            return Chip.init(f) catch |err| {
-                // scene.* = Scene.StartingScene;
+            return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
                 std.log.err("Caught {} during initialization.\n", .{err});
                 try clap.help(std.io.getStdErr().writer(), &params);
                 std.process.exit(1);
@@ -79,8 +68,7 @@ fn parseArguments() !Chip {
             };
         }
     } else {
-        // scene.* = Scene.StartingScene;
-        return try Chip.init("roms/IBM Logo.ch8");
+        return try Chip.init("roms/IBM Logo.ch8", FG_COLOR, BG_COLOR);
         // var chip: Chip = try Chip.init("roms/test_opcode.ch8");
         // var chip: Chip = try Chip.init("roms/BC_test.ch8");
         // var chip: Chip = try Chip.init("roms/PONG");
@@ -100,7 +88,7 @@ fn runChip(chip: *Chip, app: *App) !void {
 
     var texture: SDL.Texture = try SDL.createTexture(app.renderer, SDL.Texture.Format.abgr8888, SDL.Texture.Access.streaming, 64, 32);
 
-    while (!app.change_scene) {
+    while (!app.quit) {
         if (SDL.getTicks() - timer_tick >= 16) {
             timer_tick = SDL.getTicks();
             if (chip.delay_timer > 0) {
@@ -113,7 +101,6 @@ fn runChip(chip: *Chip, app: *App) !void {
         }
 
         app.handleInput();
-        // Return to StartingScene and display error
         chip.cycle() catch |err| {
             std.log.err("Caught {} during chip execution\n", .{err});
             app.quit_func();

@@ -3,17 +3,12 @@
 Build using =zig build -Drelease-fast= or without release fast, than run =./zig-out/bin/emu <PATH TO ROM>=
 
 ** TODOS
-- [ ] Debugging
-- [ ] The emulator is too fast? The screen flickers? Maybe use Texture instead of rectangles?
+- [ ] Notcurses input, will use sdl because future projects will require gamepad input and because of termial input 
+# - [ ] The emulator is too fast? The screen flickers? Is it supposed to do that?
 - [X] Sound
 - [X] All opcodes working
   
-** Games working
-- [X] Pong
-- [X] Tetris
-- [X] Cave
-- [X] Tank
-
+** Roms
 *** Pong
 Press 1 and Q to move p1 and 4 and R to move p2.
 
@@ -27,11 +22,20 @@ Press 2 to go up, Q to go left, E to go right and S to go down
 *** Tank
 Destroy the enemy, press W to shoot, Q to move left, E to move right, 2 to move down and S to move up
 
-** Packages used
+** Dependencies
+- [[https://ziglang.org/][zig]]
 - [[https://github.com/Hejsil/zig-clap][zig-clap]]
 - [[https://github.com/MasterQ32/SDL.zig][SDL.zig]]
+- [[https://www.libsdl.org/index.php][SDL]]
+- [[https://github.com/dankamongmen/notcurses][notcurses]]
 
 ** The roms were taken from
 - test-opcode.ch8 [[https://github.com/corax89/chip8-test-rom]]
 - BC_test.ch8, CAVE, Maze, PONG, TANK, TETRIS [[https://github.com/cj1128/chip8-emulator/tree/master/rom]]
 - Chipquarium, Heart monitor, morse code [[https://github.com/mattmikolay/chip-8]]
+
+** Roadmap
+- [ ] Add debugging functionality
+- [ ] Add support for latest chip8 standards
+- [ ] Target Web
+- [ ] Target Android
