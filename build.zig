@@ -10,12 +10,13 @@ pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
 
-    const sdl_linkage = b.option(std.build.LibExeObjStep.Linkage, "link", "Defines how to link SDL2 when building with mingw32") orelse .dynamic;
+    // const sdl_linkage = b.option(std.build.LibExeObjStep.Linkage, "link", "Defines how to link SDL2 when building with mingw32") orelse .dynamic;
 
     const emu = b.addExecutable("emu", "src/sdl/main.zig");
     emu.setBuildMode(mode);
     emu.setTarget(target);
-    sdk.link(emu, sdl_linkage);
+    // sdk.link(emu, sdl_linkage);
+    sdk.link(emu, .dynamic);
     emu.addPackage(sdk.getWrapperPackage("sdl2"));
     emu.install();
 
@@ -31,7 +32,10 @@ pub fn build(b: *Builder) !void {
     emu_nc.linkLibC();
     emu_nc.linkSystemLibrary("notcurses");
     emu_nc.linkSystemLibrary("notcurses-core");
-    emu_nc.install();
+    // sdk.link(emu_nc, sdl_linkage);
+    sdk.link(emu_nc, .dynamic);
+    emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
+    // emu_nc.install();
 
     const run_emu_nc = emu_nc.run();
     run_emu_nc.step.dependOn(b.getInstallStep());

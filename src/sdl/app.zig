@@ -1,6 +1,6 @@
 const std = @import("std");
-const SDL = @import("sdl2"); // TODO use this one for complete project
-// const SDL = @import("sdl/wrapper/sdl.zig");
+// const SDL = @import("sdl2"); // TODO use this one for complete project
+const SDL = @import("sdl/wrapper/sdl.zig");
 
 const WINDOW_WIDTH = 640;
 const WINDOW_HEIGHT = 320;

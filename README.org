@@ -3,8 +3,9 @@
 Build using =zig build -Drelease-fast= or without release fast, than run =./zig-out/bin/emu <PATH TO ROM>=
 
 ** TODOS
-- [ ] Notcurses input, will use sdl because future projects will require gamepad input and because of termial input 
+- [ ] Notcurses input. I have no Idea on how to do it, I can't use sdl because I need a window for input in sdl
 # - [ ] The emulator is too fast? The screen flickers? Is it supposed to do that?
+- [ ] Add some Images or gifs to showcase the project
 - [X] Sound
 - [X] All opcodes working
   
@@ -39,3 +40,11 @@ Destroy the enemy, press W to shoot, Q to move left, E to move right, 2 to move 
 - [ ] Add support for latest chip8 standards
 - [ ] Target Web
 - [ ] Target Android
+
+** Some notes on the repo
+- Why do this? Just for fun
+- Why are there so many sdl directories? This is because:
+  1) I don't know how to organize it better.
+  2) The sdl folders in src/ are not needed but are useful to get lsp when writing, it would be hell for me to write without it, when I finish development I will eventually delete them and leave only the folder in the root directory
+- The idea is to make chip.zig one file, but I wouldn't know how to import in the two projects since I can't do @import("../chip.zig"), the same applies to clap. I will change it when I discover how to do that
+- Should I leave the roms tested in the repo? I don't know

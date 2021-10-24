@@ -1,7 +1,7 @@
 const std = @import("std");
-const SDL = @import("sdl2"); // TODO use this one for complete project
-// const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
-const clap = @import("clap/clap.zig");
+// const SDL = @import("sdl2"); // TODO use this one for complete project
+const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
+const clap = @import("clap.zig");
 var page_allocator = std.heap.page_allocator;
 
 /// The "engine"
