@@ -4,7 +4,7 @@ const Chip = @import("chip.zig").Chip;
 const App = @import("app.zig").App;
 const SDL = @import("sdl2"); // TODO use this one for complete project
 // const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
-const clap = @import("clap/clap.zig");
+const clap = @import("clap.zig");
 var page_allocator = std.heap.page_allocator;
 
 //                 a b g r

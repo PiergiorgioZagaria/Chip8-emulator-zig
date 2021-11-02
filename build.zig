@@ -26,20 +26,20 @@ pub fn build(b: *Builder) !void {
     const run_emu_step = b.step("run", "Runs the chip-8 emulator");
     run_emu_step.dependOn(&run_emu.step);
 
-    const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
-    emu_nc.setBuildMode(mode);
-    emu_nc.setTarget(target);
-    emu_nc.linkLibC();
-    emu_nc.linkSystemLibrary("notcurses");
-    emu_nc.linkSystemLibrary("notcurses-core");
-    // sdk.link(emu_nc, sdl_linkage);
-    sdk.link(emu_nc, .dynamic);
-    emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
-    // emu_nc.install();
-
-    const run_emu_nc = emu_nc.run();
-    run_emu_nc.step.dependOn(b.getInstallStep());
-
-    const run_emu_nc_step = b.step("run-nc", "Runs the chip-8 emulator");
-    run_emu_nc_step.dependOn(&run_emu_nc.step);
+    //     Failed attempt at using the terminal as target
+    //     const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
+    //     emu_nc.setBuildMode(mode);
+    //     emu_nc.setTarget(target);
+    //     emu_nc.linkLibC();
+    //     emu_nc.linkSystemLibrary("notcurses");
+    //     emu_nc.linkSystemLibrary("notcurses-core");
+    //     sdk.link(emu_nc, .dynamic);
+    //     emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
+    //     emu_nc.install();
+    //
+    //     const run_emu_nc = emu_nc.run();
+    //     run_emu_nc.step.dependOn(b.getInstallStep());
+    //
+    //     const run_emu_nc_step = b.step("run-nc", "Runs the chip-8 emulator");
+    //     run_emu_nc_step.dependOn(&run_emu_nc.step);
 }

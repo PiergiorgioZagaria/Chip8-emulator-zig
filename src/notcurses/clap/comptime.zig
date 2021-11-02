@@ -82,8 +82,8 @@ pub fn ComptimeClap(
                     if (multis.len != 0)
                         try multis[param.id].append(arg.value.?);
                 } else {
-                    debug.assert(res.flags.len() != 0);
-                    if (res.flags.len() != 0)
+                    debug.assert(res.flags.len != 0);
+                    if (res.flags.len != 0)
                         res.flags.set(param.id, 1);
                 }
             }
@@ -205,7 +205,7 @@ fn testErr(
         try testing.expectEqualStrings(expected, fbs.getWritten());
         return;
     };
-    defer args.deinit();
+    _ = args;
 
     try testing.expect(false);
 }
