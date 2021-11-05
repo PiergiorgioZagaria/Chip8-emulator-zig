@@ -2,7 +2,7 @@ const std = @import("std");
 const nc = @import("wrapper.zig");
 const Chip = @import("chip.zig").Chip;
 const App = @import("app.zig").App;
-const SDL = @import("sdl2"); // TODO use this one for complete project
+const SDL = @import("sdl2");
 // const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
 const clap = @import("clap.zig");
 var page_allocator = std.heap.page_allocator;
@@ -17,12 +17,15 @@ pub fn main() anyerror!void {
 
     var chip = try parseArguments();
 
-    var app = try App.new(&chip.display, &arena.allocator);
-    defer app.stop() catch unreachable;
+    try App.new(&chip.display, &arena.allocator);
+    defer App.stop() catch unreachable;
 
-    chip.set_chip_keys(&app.keys);
+    chip.set_chip_keys(App.getKeys());
 
-    try runChip(&chip, &app);
+    runChip(&chip) catch |err| {
+        std.log.err("Caught {} during chip execution\n", .{err});
+        App.forceQuit();
+    };
 }
 
 fn parseArguments() !Chip {
@@ -78,11 +81,11 @@ fn parseArguments() !Chip {
     return undefined;
 }
 
-fn runChip(chip: *Chip, app: *App) !void {
+fn runChip(chip: *Chip) !void {
     var render_tick: usize = 0;
     var timer_tick: usize = SDL.getTicks();
 
-    while (!app.quit) {
+    while (!App.shouldQuit()) {
         if (SDL.getTicks() - timer_tick >= 16) {
             timer_tick = SDL.getTicks();
             if (chip.delay_timer > 0) {
@@ -94,19 +97,16 @@ fn runChip(chip: *Chip, app: *App) !void {
             }
         }
 
-        app.input();
-        chip.cycle() catch |err| {
-            std.log.err("Caught {} during chip execution\n", .{err});
-            app.quit_func();
-        };
+        App.input();
+        try chip.cycle();
         SDL.delay(1);
 
         if (SDL.getTicks() - render_tick >= 16) {
             if (chip.sound_timer > 0) {
-                app.beep(1);
+                App.beep(1);
             }
 
-            try app.render();
+            try App.render();
             render_tick = SDL.getTicks();
         }
     }

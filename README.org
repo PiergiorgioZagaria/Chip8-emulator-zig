@@ -1,27 +1,19 @@
 * A chip8 emulator (interpreter) written in zig
+** Notes
+The sound may not be well implemented, I ported it from another emulator
+At the moment it can render using a window with SDL or to the terminal (only kitty and other terminals that implement its keyboard protocol) using notcurses
+Tested with zig version 0.9.0-dev.1551+8346e011c and notcurses version 2.4.7-1
 ** Usage
 Build using =zig build -Drelease-fast= or without release fast, than run =./zig-out/bin/emu <PATH TO ROM>=
 
 ** TODOS
-# - [ ] Input for ncurses, impossible as it requires either X11 to be working (which means it would not work on wayland, or I would need to study how it works just for this project, which is not worth it), or root privileges (to read from /dev)
-# - [ ] The emulator is too fast? The screen flickers? Is it supposed to do that?
+- [-] Input for notcurses
+- [-] Sound
 - [ ] Add some Images or gifs to showcase the project
-- [X] Sound
-- [X] All opcodes working
-  
-** Roms
-*** Pong
-Press 1 and Q to move p1 and 4 and R to move p2.
-
-*** Tetris
-Press W to move left, E to move right, Q to rotate, S to move down faster
-
-*** Cave
-You have to get to the exit without crashing.
-Press 2 to go up, Q to go left, E to go right and S to go down
-
-*** Tank
-Destroy the enemy, press W to shoot, Q to move left, E to move right, 2 to move down and S to move up
+- [ ] Add debugging functionality
+- [ ] Add support for Octo or other
+- [ ] Target Web
+- [ ] Target Android
 
 ** Dependencies
 - [[https://ziglang.org/][zig]]
@@ -30,13 +22,8 @@ Destroy the enemy, press W to shoot, Q to move left, E to move right, 2 to move 
 - [[https://www.libsdl.org/index.php][SDL]]
 - [[https://github.com/dankamongmen/notcurses][notcurses]]
 
-** The roms were taken from
+** You can find some roms here
 - test-opcode.ch8 [[https://github.com/corax89/chip8-test-rom]]
 - BC_test.ch8, CAVE, Maze, PONG, TANK, TETRIS [[https://github.com/cj1128/chip8-emulator/tree/master/rom]]
 - Chipquarium, Heart monitor, morse code [[https://github.com/mattmikolay/chip-8]]
-
-** Roadmap
-- [ ] Add debugging functionality
-- [ ] Add support for latest chip8 standards
-- [ ] Target Web
-- [ ] Target Android
+- Many more here [[https://github.com/Goff-Davis/chip8-emu.js/tree/master/public/roms]]

@@ -22,7 +22,6 @@ pub fn main() !void {
     try App.initSDLdefault(&arena.allocator);
     defer App.deinitSDL();
 
-    // chip.keys = &app.keys;
     chip.set_chip_keys(App.get_keys());
 
     try runChip(&chip);

@@ -197,7 +197,7 @@ pub const Chip = struct {
             },
             0xC0 => {
                 var rand = std.rand.Xoroshiro128.init(@intCast(u64, std.time.nanoTimestamp()));
-                self.V[(opcode >> 8) & 0x0f] = rand.random.int(u8) & @truncate(u8, opcode & 0x00ff);
+                self.V[(opcode >> 8) & 0x0f] = rand.random().int(u8) & @truncate(u8, opcode & 0x00ff);
                 // std.debug.print("Random number\n", .{});
             },
             0xD0 => {

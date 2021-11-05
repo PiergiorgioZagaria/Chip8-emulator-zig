@@ -1,5 +1,3 @@
-pub extern fn wcwidth(__c: u32) callconv(.C) c_int;
-pub extern fn wcswidth(__c: u32) callconv(.C) c_int;
 pub const __builtin_bswap16 = @import("std").zig.c_builtins.__builtin_bswap16;
 pub const __builtin_bswap32 = @import("std").zig.c_builtins.__builtin_bswap32;
 pub const __builtin_bswap64 = @import("std").zig.c_builtins.__builtin_bswap64;
@@ -362,10 +360,10 @@ pub extern fn wmemchr(__s: [*c]const c_int, __c: c_int, __n: c_ulong) [*c]c_int;
 pub extern fn wmemcmp(__s1: [*c]const c_int, __s2: [*c]const c_int, __n: c_ulong) c_int;
 pub extern fn wmemcpy(__s1: [*c]c_int, __s2: [*c]const c_int, __n: c_ulong) [*c]c_int;
 pub extern fn wmemmove(__s1: [*c]c_int, __s2: [*c]const c_int, __n: c_ulong) [*c]c_int;
-pub extern fn wmemset(__s: [*c]wchar_t, __c: wchar_t, __n: usize) [*c]wchar_t; // /usr/include/wchar.h:319:11: warning: TODO implement function '__builtin_constant_p' in std.zig.c_builtins
-// /usr/include/wchar.h:318:8: warning: unable to translate function, demoted to extern
-pub extern fn btowc(arg___c: c_int) callconv(.C) wint_t; // /usr/include/wchar.h:325:11: warning: TODO implement function '__builtin_constant_p' in std.zig.c_builtins
-// /usr/include/wchar.h:324:8: warning: unable to translate function, demoted to extern
+pub extern fn wmemset(__s: [*c]wchar_t, __c: wchar_t, __n: usize) [*c]wchar_t; // /usr/include/wchar.h:320:11: warning: TODO implement function '__builtin_constant_p' in std.zig.c_builtins
+// /usr/include/wchar.h:319:8: warning: unable to translate function, demoted to extern
+pub extern fn btowc(arg___c: c_int) callconv(.C) wint_t; // /usr/include/wchar.h:326:11: warning: TODO implement function '__builtin_constant_p' in std.zig.c_builtins
+// /usr/include/wchar.h:325:8: warning: unable to translate function, demoted to extern
 pub extern fn wctob(arg___wc: wint_t) callconv(.C) c_int;
 pub extern fn mbsinit(__ps: [*c]const mbstate_t) c_int;
 pub extern fn mbrtowc(noalias __pwc: [*c]wchar_t, noalias __s: [*c]const u8, __n: usize, noalias __p: [*c]mbstate_t) usize;
@@ -434,11 +432,11 @@ pub extern var stderr: [*c]FILE;
 pub extern fn remove(__filename: [*c]const u8) c_int;
 pub extern fn rename(__old: [*c]const u8, __new: [*c]const u8) c_int;
 pub extern fn renameat(__oldfd: c_int, __old: [*c]const u8, __newfd: c_int, __new: [*c]const u8) c_int;
+pub extern fn fclose(__stream: [*c]FILE) c_int;
 pub extern fn tmpfile() [*c]FILE;
-pub extern fn tmpnam(__s: [*c]u8) [*c]u8;
+pub extern fn tmpnam([*c]u8) [*c]u8;
 pub extern fn tmpnam_r(__s: [*c]u8) [*c]u8;
 pub extern fn tempnam(__dir: [*c]const u8, __pfx: [*c]const u8) [*c]u8;
-pub extern fn fclose(__stream: [*c]FILE) c_int;
 pub extern fn fflush(__stream: [*c]FILE) c_int;
 pub extern fn fflush_unlocked(__stream: [*c]FILE) c_int;
 pub extern fn fopen(__filename: [*c]const u8, __modes: [*c]const u8) [*c]FILE;
@@ -583,8 +581,8 @@ pub fn ferror_unlocked(arg___stream: [*c]FILE) callconv(.C) c_int {
 pub extern fn perror(__s: [*c]const u8) void;
 pub extern fn fileno(__stream: [*c]FILE) c_int;
 pub extern fn fileno_unlocked(__stream: [*c]FILE) c_int;
-pub extern fn popen(__command: [*c]const u8, __modes: [*c]const u8) [*c]FILE;
 pub extern fn pclose(__stream: [*c]FILE) c_int;
+pub extern fn popen(__command: [*c]const u8, __modes: [*c]const u8) [*c]FILE;
 pub extern fn ctermid(__s: [*c]u8) [*c]u8;
 pub extern fn flockfile(__stream: [*c]FILE) void;
 pub extern fn ftrylockfile(__stream: [*c]FILE) c_int;
@@ -869,8 +867,8 @@ pub extern fn lcong48_r(__param: [*c]c_ushort, __buffer: [*c]struct_drand48_data
 pub extern fn malloc(__size: c_ulong) ?*c_void;
 pub extern fn calloc(__nmemb: c_ulong, __size: c_ulong) ?*c_void;
 pub extern fn realloc(__ptr: ?*c_void, __size: c_ulong) ?*c_void;
-pub extern fn reallocarray(__ptr: ?*c_void, __nmemb: usize, __size: usize) ?*c_void;
 pub extern fn free(__ptr: ?*c_void) void;
+pub extern fn reallocarray(__ptr: ?*c_void, __nmemb: usize, __size: usize) ?*c_void;
 pub extern fn alloca(__size: c_ulong) ?*c_void;
 pub extern fn valloc(__size: usize) ?*c_void;
 pub extern fn posix_memalign(__memptr: [*c]?*c_void, __alignment: usize, __size: usize) c_int;
@@ -909,13 +907,15 @@ pub fn bsearch(arg___key: ?*const c_void, arg___base: ?*const c_void, arg___nmem
     __u = __nmemb;
     while (__l < __u) {
         __idx = (__l +% __u) / @bitCast(c_ulong, @as(c_long, @as(c_int, 2)));
-        __p = @intToPtr(?*c_void, @ptrToInt(@ptrCast([*c]const u8, @alignCast(@import("std").meta.alignment(u8), __base)) + (__idx *% __size)));
+        __p = @ptrCast(?*const c_void, @ptrCast([*c]const u8, @alignCast(@import("std").meta.alignment(u8), __base)) + (__idx *% __size));
         __comparison = __compar.?(__key, __p);
         if (__comparison < @as(c_int, 0)) {
             __u = __idx;
         } else if (__comparison > @as(c_int, 0)) {
             __l = __idx +% @bitCast(c_ulong, @as(c_long, @as(c_int, 1)));
-        } else return @intToPtr(?*c_void, @ptrToInt(__p));
+        } else {
+            return @intToPtr(?*c_void, @ptrToInt(__p));
+        }
     }
     return @intToPtr(?*c_void, @as(c_int, 0));
 }
@@ -1611,6 +1611,7 @@ pub const struct_nctablet = opaque {};
 pub const struct_ncreel = opaque {};
 pub const struct_nctab = opaque {};
 pub const struct_nctabbed = opaque {};
+pub const struct_ncdirect = opaque {};
 pub const NCBLIT_DEFAULT: c_int = 0;
 pub const NCBLIT_1x1: c_int = 1;
 pub const NCBLIT_2x1: c_int = 2;
@@ -1633,6 +1634,9 @@ pub const NCSCALE_NONE_HIRES: c_int = 3;
 pub const NCSCALE_SCALE_HIRES: c_int = 4;
 pub const ncscale_e = c_uint;
 pub extern fn ncstrwidth(mbs: [*c]const u8) c_int;
+pub extern fn ncstrwidth_valid(egcs: [*c]const u8, validbytes: [*c]c_int, validwidth: [*c]c_int) c_int;
+pub extern fn notcurses_accountname() [*c]u8;
+pub extern fn notcurses_hostname() [*c]u8;
 pub extern fn notcurses_ucs32_to_utf8(ucs32: [*c]const u32, ucs32count: c_uint, resultbuf: [*c]u8, buflen: usize) c_int;
 pub fn ncchannel_r(arg_channel: u32) callconv(.C) c_uint {
     var channel = arg_channel;
@@ -1646,7 +1650,7 @@ pub fn ncchannel_b(arg_channel: u32) callconv(.C) c_uint {
     var channel = arg_channel;
     return channel & @as(c_uint, 255);
 }
-pub fn ncchannel_alpha(arg_channel: c_uint) callconv(.C) c_uint {
+pub fn ncchannel_alpha(arg_channel: u32) callconv(.C) c_uint {
     var channel = arg_channel;
     return @bitCast(c_uint, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, channel)) & @as(c_ulonglong, 805306368)));
 }
@@ -1660,22 +1664,19 @@ pub fn ncchannel_rgb8(arg_channel: u32, noalias arg_r: [*c]c_uint, noalias arg_g
     b.* = ncchannel_b(channel);
     return channel;
 }
-pub fn ncchannel_set_rgb8(arg_channel: [*c]u32, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn ncchannel_set_rgb8(arg_channel: [*c]u32, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var channel = arg_channel;
     var r = arg_r;
     var g = arg_g;
     var b = arg_b;
-    if (((r >= @as(c_int, 256)) or (g >= @as(c_int, 256))) or (b >= @as(c_int, 256))) {
+    if (((r >= @bitCast(c_uint, @as(c_int, 256))) or (g >= @bitCast(c_uint, @as(c_int, 256)))) or (b >= @bitCast(c_uint, @as(c_int, 256)))) {
         return -@as(c_int, 1);
     }
-    if (((r < @as(c_int, 0)) or (g < @as(c_int, 0))) or (b < @as(c_int, 0))) {
-        return -@as(c_int, 1);
-    }
-    var c: c_uint = @bitCast(c_uint, ((r << @intCast(@import("std").math.Log2Int(c_int), 16)) | (g << @intCast(@import("std").math.Log2Int(c_int), 8))) | b);
+    var c: u32 = ((r << @intCast(@import("std").math.Log2Int(c_uint), 16)) | (g << @intCast(@import("std").math.Log2Int(c_uint), 8))) | b;
     channel.* = @bitCast(u32, @truncate(c_uint, ((@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 16777215)) | @as(c_ulonglong, 1073741824)) | @bitCast(c_ulonglong, @as(c_ulonglong, c))));
     return 0;
 }
-pub fn ncchannel_set_rgb8_clipped(arg_channel: [*c]c_uint, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
+pub fn ncchannel_set_rgb8_clipped(arg_channel: [*c]u32, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
     var channel = arg_channel;
     var r = arg_r;
     var g = arg_g;
@@ -1698,31 +1699,31 @@ pub fn ncchannel_set_rgb8_clipped(arg_channel: [*c]c_uint, arg_r: c_int, arg_g: 
     if (b <= -@as(c_int, 1)) {
         b = 0;
     }
-    var c: c_uint = @bitCast(c_uint, ((r << @intCast(@import("std").math.Log2Int(c_int), 16)) | (g << @intCast(@import("std").math.Log2Int(c_int), 8))) | b);
-    channel.* = @bitCast(c_uint, @truncate(c_uint, ((@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 16777215)) | @as(c_ulonglong, 1073741824)) | @bitCast(c_ulonglong, @as(c_ulonglong, c))));
+    var c: u32 = @bitCast(u32, ((r << @intCast(@import("std").math.Log2Int(c_int), 16)) | (g << @intCast(@import("std").math.Log2Int(c_int), 8))) | b);
+    channel.* = @bitCast(u32, @truncate(c_uint, ((@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 16777215)) | @as(c_ulonglong, 1073741824)) | @bitCast(c_ulonglong, @as(c_ulonglong, c))));
 }
-pub fn ncchannel_set(arg_channel: [*c]c_uint, arg_rgb: c_uint) callconv(.C) c_int {
+pub fn ncchannel_set(arg_channel: [*c]u32, arg_rgb: u32) callconv(.C) c_int {
     var channel = arg_channel;
     var rgb = arg_rgb;
     if (rgb > @as(c_uint, 16777215)) {
         return -@as(c_int, 1);
     }
-    channel.* = @bitCast(c_uint, @truncate(c_uint, ((@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 16777215)) | @as(c_ulonglong, 1073741824)) | @bitCast(c_ulonglong, @as(c_ulonglong, rgb))));
+    channel.* = @bitCast(u32, @truncate(c_uint, ((@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 16777215)) | @as(c_ulonglong, 1073741824)) | @bitCast(c_ulonglong, @as(c_ulonglong, rgb))));
     return 0;
 }
 pub fn ncchannel_palindex(arg_channel: u32) callconv(.C) c_uint {
     var channel = arg_channel;
     return channel & @bitCast(c_uint, @as(c_int, 255));
 }
-pub fn ncchannel_set_alpha(arg_channel: [*c]c_uint, arg_alpha: c_uint) callconv(.C) c_int {
+pub fn ncchannel_set_alpha(arg_channel: [*c]u32, arg_alpha: c_uint) callconv(.C) c_int {
     var channel = arg_channel;
     var alpha = arg_alpha;
     if ((@bitCast(c_ulonglong, @as(c_ulonglong, alpha)) & ~@as(c_ulonglong, 805306368)) != 0) {
         return -@as(c_int, 1);
     }
-    channel.* = @bitCast(c_uint, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, alpha)) | (@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 805306368))));
+    channel.* = @bitCast(u32, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, alpha)) | (@bitCast(c_ulonglong, @as(c_ulonglong, channel.*)) & ~@as(c_ulonglong, 805306368))));
     if (@bitCast(c_ulonglong, @as(c_ulonglong, alpha)) != @as(c_ulonglong, 0)) {
-        channel.* |= @bitCast(c_uint, @truncate(c_uint, @as(c_ulonglong, 1073741824)));
+        channel.* |= @bitCast(u32, @truncate(c_uint, @as(c_ulonglong, 1073741824)));
     }
     return 0;
 }
@@ -1739,19 +1740,19 @@ pub fn ncchannel_set_palindex(arg_channel: [*c]u32, arg_idx: c_int) callconv(.C)
     channel.* |= @bitCast(c_uint, idx);
     return 0;
 }
-pub fn ncchannel_default_p(arg_channel: c_uint) callconv(.C) bool {
+pub fn ncchannel_default_p(arg_channel: u32) callconv(.C) bool {
     var channel = arg_channel;
     return !((@bitCast(c_ulonglong, @as(c_ulonglong, channel)) & @as(c_ulonglong, 1073741824)) != 0);
 }
-pub fn ncchannel_palindex_p(arg_channel: c_uint) callconv(.C) bool {
+pub fn ncchannel_palindex_p(arg_channel: u32) callconv(.C) bool {
     var channel = arg_channel;
     return !ncchannel_default_p(channel) and ((@bitCast(c_ulonglong, @as(c_ulonglong, channel)) & @as(c_ulonglong, 134217728)) != 0);
 }
-pub fn ncchannel_set_default(arg_channel: [*c]c_uint) callconv(.C) c_uint {
+pub fn ncchannel_set_default(arg_channel: [*c]u32) callconv(.C) u32 {
     var channel = arg_channel;
     return blk: {
         const ref = &channel.*;
-        ref.* &= @bitCast(c_uint, @truncate(c_uint, ~(@as(c_ulonglong, 1073741824) | @as(c_ulonglong, 805306368))));
+        ref.* &= @bitCast(u32, @truncate(c_uint, ~(@as(c_ulonglong, 1073741824) | @as(c_ulonglong, 805306368))));
         break :blk ref.*;
     };
 }
@@ -1805,13 +1806,13 @@ pub fn ncchannels_bg_palindex(arg_channels: u64) callconv(.C) c_uint {
     var channels = arg_channels;
     return ncchannel_palindex(ncchannels_bchannel(channels));
 }
-pub fn ncchannels_fg_rgb(arg_channels: u64) callconv(.C) c_uint {
+pub fn ncchannels_fg_rgb(arg_channels: u64) callconv(.C) u32 {
     var channels = arg_channels;
-    return @bitCast(c_uint, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, ncchannels_fchannel(channels))) & @as(c_ulonglong, 16777215)));
+    return @bitCast(u32, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, ncchannels_fchannel(channels))) & @as(c_ulonglong, 16777215)));
 }
-pub fn ncchannels_bg_rgb(arg_channels: u64) callconv(.C) c_uint {
+pub fn ncchannels_bg_rgb(arg_channels: u64) callconv(.C) u32 {
     var channels = arg_channels;
-    return @bitCast(c_uint, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, ncchannels_bchannel(channels))) & @as(c_ulonglong, 16777215)));
+    return @bitCast(u32, @truncate(c_uint, @bitCast(c_ulonglong, @as(c_ulonglong, ncchannels_bchannel(channels))) & @as(c_ulonglong, 16777215)));
 }
 pub fn ncchannels_fg_alpha(arg_channels: u64) callconv(.C) c_uint {
     var channels = arg_channels;
@@ -1821,21 +1822,21 @@ pub fn ncchannels_bg_alpha(arg_channels: u64) callconv(.C) c_uint {
     var channels = arg_channels;
     return ncchannel_alpha(ncchannels_bchannel(channels));
 }
-pub fn ncchannels_fg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) c_uint {
+pub fn ncchannels_fg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) u32 {
     var channels = arg_channels;
     var r = arg_r;
     var g = arg_g;
     var b = arg_b;
     return ncchannel_rgb8(ncchannels_fchannel(channels), r, g, b);
 }
-pub fn ncchannels_bg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) c_uint {
+pub fn ncchannels_bg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) u32 {
     var channels = arg_channels;
     var r = arg_r;
     var g = arg_g;
     var b = arg_b;
     return ncchannel_rgb8(ncchannels_bchannel(channels), r, g, b);
 }
-pub fn ncchannels_set_fg_rgb8(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn ncchannels_set_fg_rgb8(arg_channels: [*c]u64, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var channels = arg_channels;
     var r = arg_r;
     var g = arg_g;
@@ -1886,7 +1887,7 @@ pub fn ncchannels_set_fg_rgb(arg_channels: [*c]u64, arg_rgb: c_uint) callconv(.C
     channels.* = @bitCast(u64, @truncate(c_ulong, @bitCast(c_ulonglong, @as(c_ulonglong, @bitCast(u64, @as(c_ulong, channel)) << @intCast(u6, 32))) | (@bitCast(c_ulonglong, @as(c_ulonglong, channels.*)) & @as(c_ulonglong, 4294967295))));
     return 0;
 }
-pub fn ncchannels_set_bg_rgb8(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn ncchannels_set_bg_rgb8(arg_channels: [*c]u64, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var channels = arg_channels;
     var r = arg_r;
     var g = arg_g;
@@ -2046,7 +2047,10 @@ pub fn nccell_wide_left_p(arg_c: [*c]const nccell) callconv(.C) bool {
     return (@as(c_int, @boolToInt(nccell_double_wide_p(c))) != 0) and (c.*.gcluster != 0);
 }
 pub extern fn nccell_extended_gcluster(n: ?*const struct_ncplane, c: [*c]const nccell) [*c]const u8;
-pub extern fn nccell_width(n: ?*const struct_ncplane, c: [*c]const nccell) c_int;
+pub fn nccell_cols(arg_c: [*c]const nccell) callconv(.C) c_int {
+    var c = arg_c;
+    return if (@bitCast(c_int, @as(c_uint, c.*.width)) != 0) @bitCast(c_int, @as(c_uint, c.*.width)) else @as(c_int, 1);
+}
 pub fn nccell_strdup(arg_n: ?*const struct_ncplane, arg_c: [*c]const nccell) callconv(.C) [*c]u8 {
     var n = arg_n;
     var c = arg_c;
@@ -2097,16 +2101,16 @@ pub fn nccell_load_egc32(arg_n: ?*struct_ncplane, arg_c: [*c]nccell, arg_egc: u3
     gcluster[@intCast(c_uint, @as(c_int, 4))] = '\x00';
     return nccell_load(n, c, @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), &gcluster)));
 }
-pub const NCLOGLEVEL_SILENT: c_int = 0;
-pub const NCLOGLEVEL_PANIC: c_int = 1;
-pub const NCLOGLEVEL_FATAL: c_int = 2;
-pub const NCLOGLEVEL_ERROR: c_int = 3;
-pub const NCLOGLEVEL_WARNING: c_int = 4;
-pub const NCLOGLEVEL_INFO: c_int = 5;
-pub const NCLOGLEVEL_VERBOSE: c_int = 6;
-pub const NCLOGLEVEL_DEBUG: c_int = 7;
-pub const NCLOGLEVEL_TRACE: c_int = 8;
-pub const ncloglevel_e = c_uint;
+pub const NCLOGLEVEL_SILENT: c_int = -1;
+pub const NCLOGLEVEL_PANIC: c_int = 0;
+pub const NCLOGLEVEL_FATAL: c_int = 1;
+pub const NCLOGLEVEL_ERROR: c_int = 2;
+pub const NCLOGLEVEL_WARNING: c_int = 3;
+pub const NCLOGLEVEL_INFO: c_int = 4;
+pub const NCLOGLEVEL_VERBOSE: c_int = 5;
+pub const NCLOGLEVEL_DEBUG: c_int = 6;
+pub const NCLOGLEVEL_TRACE: c_int = 7;
+pub const ncloglevel_e = c_int;
 pub const struct_notcurses_options = extern struct {
     termtype: [*c]const u8,
     renderfp: [*c]FILE,
@@ -2126,6 +2130,8 @@ pub extern fn notcurses_str_scalemode(scalemode: ncscale_e) [*c]const u8;
 pub extern fn notcurses_init(opts: [*c]const notcurses_options, fp: [*c]FILE) ?*struct_notcurses;
 pub extern fn notcurses_core_init(opts: [*c]const notcurses_options, fp: [*c]FILE) ?*struct_notcurses;
 pub extern fn notcurses_stop(nc: ?*struct_notcurses) c_int;
+pub extern fn notcurses_enter_alternate_screen(nc: ?*struct_notcurses) c_int;
+pub extern fn notcurses_leave_alternate_screen(nc: ?*struct_notcurses) c_int;
 pub extern fn ncpile_top(n: ?*struct_ncplane) ?*struct_ncplane;
 pub extern fn ncpile_bottom(n: ?*struct_ncplane) ?*struct_ncplane;
 pub extern fn ncpile_render(n: ?*struct_ncplane) c_int;
@@ -2142,8 +2148,13 @@ pub fn nckey_supppuab_p(arg_w: u32) callconv(.C) bool {
 }
 pub fn nckey_mouse_p(arg_r: u32) callconv(.C) bool {
     var r = arg_r;
-    return (r >= @bitCast(c_uint, @as(c_int, 201) + @as(c_int, 1048576))) and (r <= @bitCast(c_uint, @as(c_int, 212) + @as(c_int, 1048576)));
+    return (r >= @bitCast(c_uint, @as(c_int, 201) + @as(c_int, 1048576))) and (r <= @bitCast(c_uint, @as(c_int, 211) + @as(c_int, 1048576)));
 }
+pub const NCTYPE_UNKNOWN: c_int = 0;
+pub const NCTYPE_PRESS: c_int = 1;
+pub const NCTYPE_REPEAT: c_int = 2;
+pub const NCTYPE_RELEASE: c_int = 3;
+const enum_unnamed_37 = c_uint;
 pub const struct_ncinput = extern struct {
     id: u32,
     y: c_int,
@@ -2151,7 +2162,7 @@ pub const struct_ncinput = extern struct {
     alt: bool,
     shift: bool,
     ctrl: bool,
-    seqnum: u64,
+    evtype: enum_unnamed_37,
 };
 pub const ncinput = struct_ncinput;
 pub fn ncinput_equal_p(arg_n1: [*c]const ncinput, arg_n2: [*c]const ncinput) callconv(.C) bool {
@@ -2166,27 +2177,27 @@ pub fn ncinput_equal_p(arg_n1: [*c]const ncinput, arg_n2: [*c]const ncinput) cal
     if (((@as(c_int, @boolToInt(n1.*.alt)) != @as(c_int, @boolToInt(n2.*.alt))) or (@as(c_int, @boolToInt(n1.*.shift)) != @as(c_int, @boolToInt(n2.*.shift)))) or (@as(c_int, @boolToInt(n1.*.ctrl)) != @as(c_int, @boolToInt(n2.*.ctrl)))) {
         return @as(c_int, 0) != 0;
     }
+    if (n1.*.evtype != n2.*.evtype) {
+        return @as(c_int, 0) != 0;
+    }
     return @as(c_int, 1) != 0;
 }
-pub extern fn notcurses_getc(n: ?*struct_notcurses, ts: [*c]const struct_timespec, sigmask: [*c]const sigset_t, ni: [*c]ncinput) u32;
+pub extern fn notcurses_get(n: ?*struct_notcurses, ts: [*c]const struct_timespec, ni: [*c]ncinput) u32;
+pub extern fn notcurses_getvec(n: ?*struct_notcurses, ts: [*c]const struct_timespec, ni: [*c]ncinput, vcount: c_int) c_int;
 pub extern fn notcurses_inputready_fd(n: ?*struct_notcurses) c_int;
 pub fn notcurses_getc_nblock(arg_n: ?*struct_notcurses, arg_ni: [*c]ncinput) callconv(.C) u32 {
     var n = arg_n;
     var ni = arg_ni;
-    var sigmask_1: sigset_t = undefined;
-    _ = sigfillset(&sigmask_1);
     var ts: struct_timespec = struct_timespec{
         .tv_sec = @bitCast(__time_t, @as(c_long, @as(c_int, 0))),
         .tv_nsec = @bitCast(__syscall_slong_t, @as(c_long, @as(c_int, 0))),
     };
-    return notcurses_getc(n, &ts, &sigmask_1, ni);
+    return notcurses_get(n, &ts, ni);
 }
 pub fn notcurses_getc_blocking(arg_n: ?*struct_notcurses, arg_ni: [*c]ncinput) callconv(.C) u32 {
     var n = arg_n;
     var ni = arg_ni;
-    var sigmask_1: sigset_t = undefined;
-    _ = sigemptyset(&sigmask_1);
-    return notcurses_getc(n, null, &sigmask_1, ni);
+    return notcurses_get(n, null, ni);
 }
 pub fn ncinput_nomod_p(arg_ni: [*c]const ncinput) callconv(.C) bool {
     var ni = arg_ni;
@@ -2258,6 +2269,8 @@ pub extern fn ncplane_resize_marginalized(n: ?*struct_ncplane) c_int;
 pub extern fn ncplane_resize_realign(n: ?*struct_ncplane) c_int;
 pub extern fn ncplane_set_resizecb(n: ?*struct_ncplane, resizecb: ?fn (?*struct_ncplane) callconv(.C) c_int) void;
 pub extern fn ncplane_resizecb(n: ?*const struct_ncplane) ?fn (?*struct_ncplane) callconv(.C) c_int;
+pub extern fn ncplane_set_name(n: ?*struct_ncplane, name: [*c]const u8) c_int;
+pub extern fn ncplane_name(n: ?*const struct_ncplane) [*c]u8;
 pub extern fn ncplane_reparent(n: ?*struct_ncplane, newparent: ?*struct_ncplane) ?*struct_ncplane;
 pub extern fn ncplane_reparent_family(n: ?*struct_ncplane, newparent: ?*struct_ncplane) ?*struct_ncplane;
 pub extern fn ncplane_dup(n: ?*const struct_ncplane, @"opaque": ?*c_void) ?*struct_ncplane;
@@ -2271,7 +2284,7 @@ pub const struct_ncpalette = extern struct {
 pub const ncpalette = struct_ncpalette;
 pub extern fn ncpalette_new(nc: ?*struct_notcurses) [*c]ncpalette;
 pub extern fn ncpalette_use(nc: ?*struct_notcurses, p: [*c]const ncpalette) c_int;
-pub fn ncpalette_set_rgb8(arg_p: [*c]ncpalette, arg_idx: c_int, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn ncpalette_set_rgb8(arg_p: [*c]ncpalette, arg_idx: c_int, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var p = arg_p;
     var idx = arg_idx;
     var r = arg_r;
@@ -2308,6 +2321,7 @@ pub const struct_nccapabilities = extern struct {
     utf8: bool,
     rgb: bool,
     can_change_colors: bool,
+    halfblocks: bool,
     quadrants: bool,
     sextants: bool,
     braille: bool,
@@ -2338,7 +2352,15 @@ pub extern fn notcurses_canhalfblock(nc: ?*const struct_notcurses) bool;
 pub extern fn notcurses_canquadrant(nc: ?*const struct_notcurses) bool;
 pub extern fn notcurses_cansextant(nc: ?*const struct_notcurses) bool;
 pub extern fn notcurses_canbraille(nc: ?*const struct_notcurses) bool;
-pub extern fn notcurses_check_pixel_support(nc: ?*const struct_notcurses) c_int;
+pub const NCPIXEL_NONE: c_int = 0;
+pub const NCPIXEL_SIXEL: c_int = 1;
+pub const NCPIXEL_LINUXFB: c_int = 2;
+pub const NCPIXEL_ITERM2: c_int = 3;
+pub const NCPIXEL_KITTY_STATIC: c_int = 4;
+pub const NCPIXEL_KITTY_ANIMATED: c_int = 5;
+pub const NCPIXEL_KITTY_SELFREF: c_int = 6;
+pub const ncpixelimpl_e = c_uint;
+pub extern fn notcurses_check_pixel_support(nc: ?*const struct_notcurses) ncpixelimpl_e;
 pub const struct_ncstats = extern struct {
     renders: u64,
     writeouts: u64,
@@ -2372,6 +2394,7 @@ pub const struct_ncstats = extern struct {
     sprixelelisions: u64,
     sprixelbytes: u64,
     input_errors: u64,
+    input_events: u64,
 };
 pub const ncstats = struct_ncstats;
 pub extern fn notcurses_stats_alloc(nc: ?*const struct_notcurses) [*c]ncstats;
@@ -2427,12 +2450,24 @@ pub fn ncplane_descendant_p(arg_n: ?*const struct_ncplane, arg_ancestor: ?*const
     }
     return 1;
 }
-pub extern fn ncplane_move_top(n: ?*struct_ncplane) void;
-pub extern fn ncplane_move_bottom(n: ?*struct_ncplane) void;
 pub extern fn ncplane_move_above(noalias n: ?*struct_ncplane, noalias above: ?*struct_ncplane) c_int;
 pub extern fn ncplane_move_below(noalias n: ?*struct_ncplane, noalias below: ?*struct_ncplane) c_int;
+pub extern fn ncplane_move_top(n: ?*struct_ncplane) void;
+pub extern fn ncplane_move_bottom(n: ?*struct_ncplane) void;
+pub extern fn ncplane_move_family_above(n: ?*struct_ncplane, targ: ?*struct_ncplane) c_int;
+pub extern fn ncplane_move_family_below(n: ?*struct_ncplane, targ: ?*struct_ncplane) c_int;
+pub fn ncplane_move_family_top(arg_n: ?*struct_ncplane) callconv(.C) void {
+    var n = arg_n;
+    _ = ncplane_move_family_below(n, null);
+}
+pub fn ncplane_move_family_bottom(arg_n: ?*struct_ncplane) callconv(.C) void {
+    var n = arg_n;
+    _ = ncplane_move_family_above(n, null);
+}
 pub extern fn ncplane_below(n: ?*struct_ncplane) ?*struct_ncplane;
 pub extern fn ncplane_above(n: ?*struct_ncplane) ?*struct_ncplane;
+pub extern fn ncplane_scrollup(n: ?*struct_ncplane, r: c_int) c_int;
+pub extern fn ncplane_scrollup_child(n: ?*struct_ncplane, child: ?*const struct_ncplane) c_int;
 pub extern fn ncplane_rotate_cw(n: ?*struct_ncplane) c_int;
 pub extern fn ncplane_rotate_ccw(n: ?*struct_ncplane) c_int;
 pub extern fn ncplane_at_cursor(n: ?*struct_ncplane, stylemask: [*c]u16, channels: [*c]u64) [*c]u8;
@@ -2510,18 +2545,32 @@ pub fn ncplane_putegc(arg_n: ?*struct_ncplane, arg_gclust: [*c]const u8, arg_sby
     return ncplane_putegc_yx(n, -@as(c_int, 1), -@as(c_int, 1), gclust, sbytes);
 }
 pub extern fn ncplane_putegc_stained(n: ?*struct_ncplane, gclust: [*c]const u8, sbytes: [*c]c_int) c_int;
+pub fn ncwcsrtombs(arg_src: [*c]const wchar_t) callconv(.C) [*c]u8 {
+    var src = arg_src;
+    var ps: mbstate_t = undefined;
+    _ = memset(@ptrCast(?*c_void, &ps), @as(c_int, 0), @sizeOf(mbstate_t));
+    var mbytes: usize = wcsrtombs(null, &src, @bitCast(usize, @as(c_long, @as(c_int, 0))), &ps);
+    if (mbytes == @bitCast(usize, @as(c_long, -@as(c_int, 1)))) {
+        return null;
+    }
+    mbytes +%= 1;
+    var mbstr: [*c]u8 = @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), malloc(mbytes)));
+    if (mbstr == @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), @intToPtr(?*c_void, @as(c_int, 0))))) {
+        return null;
+    }
+    var s: usize = wcsrtombs(mbstr, &src, mbytes, &ps);
+    if (s == @bitCast(usize, @as(c_long, -@as(c_int, 1)))) {
+        free(@ptrCast(?*c_void, mbstr));
+        return null;
+    }
+    return mbstr;
+}
 pub fn ncplane_putwegc(arg_n: ?*struct_ncplane, arg_gclust: [*c]const wchar_t, arg_sbytes: [*c]c_int) callconv(.C) c_int {
     var n = arg_n;
     var gclust = arg_gclust;
     var sbytes = arg_sbytes;
-    const mbytes: usize = (wcslen(gclust) *% @bitCast(c_ulong, @as(c_long, @as(c_int, 6)))) +% @bitCast(c_ulong, @as(c_long, @as(c_int, 1)));
-    var mbstr: [*c]u8 = @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), malloc(mbytes)));
+    var mbstr: [*c]u8 = ncwcsrtombs(gclust);
     if (mbstr == @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), @intToPtr(?*c_void, @as(c_int, 0))))) {
-        return -@as(c_int, 1);
-    }
-    var s: usize = wcstombs(mbstr, gclust, mbytes);
-    if (s == @bitCast(usize, @as(c_long, -@as(c_int, 1)))) {
-        free(@ptrCast(?*c_void, mbstr));
         return -@as(c_int, 1);
     }
     var ret: c_int = ncplane_putegc(n, mbstr, sbytes);
@@ -2561,12 +2610,15 @@ pub fn ncplane_putwstr_yx(arg_n: ?*struct_ncplane, arg_y: c_int, arg_x: c_int, a
     var y = arg_y;
     var x = arg_x;
     var gclustarr = arg_gclustarr;
-    const mbytes: usize = (wcslen(gclustarr) *% @bitCast(c_ulong, @as(c_long, @as(c_int, 6)))) +% @bitCast(c_ulong, @as(c_long, @as(c_int, 1)));
+    const mbytes: usize = (wcslen(gclustarr) *% @bitCast(c_ulong, @as(c_long, @as(c_int, 4)))) +% @bitCast(c_ulong, @as(c_long, @as(c_int, 1)));
     var mbstr: [*c]u8 = @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), malloc(mbytes)));
     if (mbstr == @ptrCast([*c]u8, @alignCast(@import("std").meta.alignment(u8), @intToPtr(?*c_void, @as(c_int, 0))))) {
         return -@as(c_int, 1);
     }
-    var s: usize = wcstombs(mbstr, gclustarr, mbytes);
+    var ps: mbstate_t = undefined;
+    _ = memset(@ptrCast(?*c_void, &ps), @as(c_int, 0), @sizeOf(mbstate_t));
+    var gend: [*c][*c]const wchar_t = &gclustarr;
+    var s: usize = wcsrtombs(mbstr, gend, mbytes, &ps);
     if (s == @bitCast(usize, @as(c_long, -@as(c_int, 1)))) {
         free(@ptrCast(?*c_void, mbstr));
         return -@as(c_int, 1);
@@ -2592,18 +2644,9 @@ pub fn ncplane_putwstr(arg_n: ?*struct_ncplane, arg_gclustarr: [*c]const wchar_t
     var n = arg_n;
     var gclustarr = arg_gclustarr;
     return ncplane_putwstr_yx(n, -@as(c_int, 1), -@as(c_int, 1), gclustarr);
-}
-pub fn ncplane_putwc_yx(arg_n: ?*struct_ncplane, arg_y: c_int, arg_x: c_int, arg_w: wchar_t) callconv(.C) c_int {
-    var n = arg_n;
-    var y = arg_y;
-    var x = arg_x;
-    var w = arg_w;
-    var warr: [2]wchar_t = [2]wchar_t{
-        w,
-        '\u{0}',
-    };
-    return ncplane_putwstr_yx(n, y, x, @ptrCast([*c]wchar_t, @alignCast(@import("std").meta.alignment(wchar_t), &warr)));
-}
+} // /usr/include/notcurses/notcurses.h:2014:8: warning: unsupported type: 'VariableArray'
+// /usr/include/notcurses/notcurses.h:2013:1: warning: unable to translate function, demoted to extern
+pub extern fn ncplane_putwc_yx(arg_n: ?*struct_ncplane, arg_y: c_int, arg_x: c_int, arg_w: wchar_t) callconv(.C) c_int;
 pub fn ncplane_putwc(arg_n: ?*struct_ncplane, arg_w: wchar_t) callconv(.C) c_int {
     var n = arg_n;
     var w = arg_w;
@@ -2626,10 +2669,10 @@ pub fn ncplane_vprintf(arg_n: ?*struct_ncplane, arg_format: [*c]const u8, arg_ap
     var ap = arg_ap;
     return ncplane_vprintf_yx(n, -@as(c_int, 1), -@as(c_int, 1), format, ap);
 }
-pub extern fn ncplane_vprintf_stained(n: ?*struct_ncplane, format: [*c]const u8, ap: [*c]struct___va_list_tag) c_int; // /usr/local/include/notcurses/notcurses.h:1896:1: warning: TODO unable to translate variadic function, demoted to extern
-pub extern fn ncplane_printf(n: ?*struct_ncplane, format: [*c]const u8, ...) c_int; // /usr/local/include/notcurses/notcurses.h:1909:1: warning: TODO unable to translate variadic function, demoted to extern
-pub extern fn ncplane_printf_yx(n: ?*struct_ncplane, y: c_int, x: c_int, format: [*c]const u8, ...) c_int; // /usr/local/include/notcurses/notcurses.h:1923:1: warning: TODO unable to translate variadic function, demoted to extern
-pub extern fn ncplane_printf_aligned(n: ?*struct_ncplane, y: c_int, @"align": ncalign_e, format: [*c]const u8, ...) c_int; // /usr/local/include/notcurses/notcurses.h:1936:1: warning: TODO unable to translate variadic function, demoted to extern
+pub extern fn ncplane_vprintf_stained(n: ?*struct_ncplane, format: [*c]const u8, ap: [*c]struct___va_list_tag) c_int; // /usr/include/notcurses/notcurses.h:2058:1: warning: TODO unable to translate variadic function, demoted to extern
+pub extern fn ncplane_printf(n: ?*struct_ncplane, format: [*c]const u8, ...) c_int; // /usr/include/notcurses/notcurses.h:2071:1: warning: TODO unable to translate variadic function, demoted to extern
+pub extern fn ncplane_printf_yx(n: ?*struct_ncplane, y: c_int, x: c_int, format: [*c]const u8, ...) c_int; // /usr/include/notcurses/notcurses.h:2085:1: warning: TODO unable to translate variadic function, demoted to extern
+pub extern fn ncplane_printf_aligned(n: ?*struct_ncplane, y: c_int, @"align": ncalign_e, format: [*c]const u8, ...) c_int; // /usr/include/notcurses/notcurses.h:2098:1: warning: TODO unable to translate variadic function, demoted to extern
 pub extern fn ncplane_printf_stained(n: ?*struct_ncplane, format: [*c]const u8, ...) c_int;
 pub extern fn ncplane_puttext(n: ?*struct_ncplane, y: c_int, @"align": ncalign_e, text: [*c]const u8, bytes: [*c]usize) c_int;
 pub extern fn ncplane_hline_interp(n: ?*struct_ncplane, c: [*c]const nccell, len: c_int, c1: u64, c2: u64) c_int;
@@ -2738,7 +2781,7 @@ pub fn nccell_bg_rgb8(arg_cl: [*c]const nccell, arg_r: [*c]c_uint, arg_g: [*c]c_
     var b = arg_b;
     return ncchannels_bg_rgb8(cl.*.channels, r, g, b);
 }
-pub fn nccell_set_fg_rgb8(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn nccell_set_fg_rgb8(arg_cl: [*c]nccell, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var cl = arg_cl;
     var r = arg_r;
     var g = arg_g;
@@ -2766,7 +2809,7 @@ pub fn nccell_fg_palindex(arg_cl: [*c]const nccell) callconv(.C) u32 {
     var cl = arg_cl;
     return ncchannels_fg_palindex(cl.*.channels);
 }
-pub fn nccell_set_bg_rgb8(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn nccell_set_bg_rgb8(arg_cl: [*c]nccell, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var cl = arg_cl;
     var r = arg_r;
     var g = arg_g;
@@ -2862,8 +2905,8 @@ pub fn ncplane_bg_rgb8(arg_n: ?*const struct_ncplane, arg_r: [*c]c_uint, arg_g: 
 }
 pub extern fn ncplane_set_fchannel(n: ?*struct_ncplane, channel: u32) u64;
 pub extern fn ncplane_set_bchannel(n: ?*struct_ncplane, channel: u32) u64;
-pub extern fn ncplane_set_fg_rgb8(n: ?*struct_ncplane, r: c_int, g: c_int, b: c_int) c_int;
-pub extern fn ncplane_set_bg_rgb8(n: ?*struct_ncplane, r: c_int, g: c_int, b: c_int) c_int;
+pub extern fn ncplane_set_fg_rgb8(n: ?*struct_ncplane, r: c_uint, g: c_uint, b: c_uint) c_int;
+pub extern fn ncplane_set_bg_rgb8(n: ?*struct_ncplane, r: c_uint, g: c_uint, b: c_uint) c_int;
 pub extern fn ncplane_set_bg_rgb8_clipped(n: ?*struct_ncplane, r: c_int, g: c_int, b: c_int) void;
 pub extern fn ncplane_set_fg_rgb8_clipped(n: ?*struct_ncplane, r: c_int, g: c_int, b: c_int) void;
 pub extern fn ncplane_set_fg_rgb(n: ?*struct_ncplane, channel: u32) c_int;
@@ -3284,6 +3327,7 @@ pub extern fn ncvisual_from_rgba(rgba: ?*const c_void, rows: c_int, rowstride: c
 pub extern fn ncvisual_from_rgb_packed(rgba: ?*const c_void, rows: c_int, rowstride: c_int, cols: c_int, alpha: c_int) ?*struct_ncvisual;
 pub extern fn ncvisual_from_rgb_loose(rgba: ?*const c_void, rows: c_int, rowstride: c_int, cols: c_int, alpha: c_int) ?*struct_ncvisual;
 pub extern fn ncvisual_from_bgra(bgra: ?*const c_void, rows: c_int, rowstride: c_int, cols: c_int) ?*struct_ncvisual;
+pub extern fn ncvisual_from_palidx(data: ?*const c_void, rows: c_int, rowstride: c_int, cols: c_int, palsize: c_int, pstride: c_int, palette: [*c]const u32) ?*struct_ncvisual;
 pub extern fn ncvisual_from_plane(n: ?*const struct_ncplane, blit: ncblitter_e, begy: c_int, begx: c_int, leny: c_int, lenx: c_int) ?*struct_ncvisual;
 pub const struct_ncvisual_options = extern struct {
     n: ?*struct_ncplane,
@@ -3297,6 +3341,8 @@ pub const struct_ncvisual_options = extern struct {
     blitter: ncblitter_e,
     flags: u64,
     transcolor: u32,
+    pxoffy: c_uint,
+    pxoffx: c_uint,
 };
 pub extern fn ncplane_as_rgba(n: ?*const struct_ncplane, blit: ncblitter_e, begy: c_int, begx: c_int, leny: c_int, lenx: c_int, pxdimy: [*c]c_int, pxdimx: [*c]c_int) [*c]u32;
 pub extern fn ncvisual_blitter_geom(nc: ?*const struct_notcurses, n: ?*const struct_ncvisual, vopts: [*c]const struct_ncvisual_options, y: [*c]c_int, x: [*c]c_int, scaley: [*c]c_int, scalex: [*c]c_int, blitter: [*c]ncblitter_e) c_int;
@@ -3310,31 +3356,38 @@ pub extern fn ncvisual_polyfill_yx(n: ?*struct_ncvisual, y: c_int, x: c_int, rgb
 pub extern fn ncvisual_at_yx(n: ?*const struct_ncvisual, y: c_int, x: c_int, pixel: [*c]u32) c_int;
 pub extern fn ncvisual_set_yx(n: ?*const struct_ncvisual, y: c_int, x: c_int, pixel: u32) c_int;
 pub extern fn ncvisual_render(nc: ?*struct_notcurses, ncv: ?*struct_ncvisual, vopts: [*c]const struct_ncvisual_options) ?*struct_ncplane;
-pub fn ncvisualplane_create(arg_n: ?*struct_ncplane, arg_opts: [*c]const struct_ncplane_options, arg_ncv: ?*struct_ncvisual, arg_vopts: [*c]struct_ncvisual_options) callconv(.C) ?*struct_ncplane {
-    var n = arg_n;
+pub extern fn ncvisual_blit(nc: ?*struct_notcurses, ncv: ?*struct_ncvisual, vopts: [*c]const struct_ncvisual_options) ?*struct_ncplane;
+pub fn ncvisualplane_create(arg_nc: ?*struct_notcurses, arg_opts: [*c]const struct_ncplane_options, arg_ncv: ?*struct_ncvisual, arg_vopts: [*c]struct_ncvisual_options) callconv(.C) ?*struct_ncplane {
+    var nc = arg_nc;
     var opts = arg_opts;
     var ncv = arg_ncv;
     var vopts = arg_vopts;
+    var newn: ?*struct_ncplane = undefined;
     if ((vopts != null) and (vopts.*.n != null)) {
-        return null;
-    }
-    var newn: ?*struct_ncplane = ncplane_create(n, opts);
-    if (newn != null) {
-        var v: struct_ncvisual_options = undefined;
-        if (!(vopts != null)) {
-            vopts = &v;
-            _ = memset(@ptrCast(?*c_void, vopts), @as(c_int, 0), @sizeOf(struct_ncvisual_options));
-        }
-        vopts.*.n = newn;
-        if (ncvisual_render(ncplane_notcurses(n), ncv, vopts) == @ptrCast(?*struct_ncplane, @intToPtr(?*c_void, @as(c_int, 0)))) {
-            _ = ncplane_destroy(newn);
-            vopts.*.n = null;
+        if ((@bitCast(c_ulonglong, @as(c_ulonglong, vopts.*.flags)) & @as(c_ulonglong, 32)) != 0) {
             return null;
         }
+        newn = ncplane_create(vopts.*.n, opts);
+    } else {
+        newn = ncpile_create(nc, opts);
+    }
+    if (newn == @ptrCast(?*struct_ncplane, @intToPtr(?*c_void, @as(c_int, 0)))) {
+        return null;
+    }
+    var v: struct_ncvisual_options = undefined;
+    if (!(vopts != null)) {
+        vopts = &v;
+        _ = memset(@ptrCast(?*c_void, vopts), @as(c_int, 0), @sizeOf(struct_ncvisual_options));
+    }
+    vopts.*.n = newn;
+    if (ncvisual_blit(nc, ncv, vopts) == @ptrCast(?*struct_ncplane, @intToPtr(?*c_void, @as(c_int, 0)))) {
+        _ = ncplane_destroy(newn);
+        vopts.*.n = null;
+        return null;
     }
     return newn;
 }
-pub extern fn ncvisual_subtitle(ncv: ?*const struct_ncvisual) [*c]u8;
+pub extern fn ncvisual_subtitle_plane(parent: ?*struct_ncplane, ncv: ?*const struct_ncvisual) ?*struct_ncplane;
 pub extern fn ncvisual_media_defblitter(nc: ?*const struct_notcurses, scale: ncscale_e) ncblitter_e;
 pub const ncstreamcb = ?fn (?*struct_ncvisual, [*c]struct_ncvisual_options, [*c]const struct_timespec, ?*c_void) callconv(.C) c_int;
 pub extern fn ncvisual_simple_streamer(ncv: ?*struct_ncvisual, vopts: [*c]struct_ncvisual_options, tspec: [*c]const struct_timespec, curry: ?*c_void) c_int;
@@ -3359,40 +3412,40 @@ pub fn ncpixel_b(arg_pixel: u32) callconv(.C) c_uint {
     var pixel = arg_pixel;
     return @bitCast(c_uint, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel)))) & @as(c_ulong, 16711680)) >> @intCast(@import("std").math.Log2Int(c_ulong), 16)));
 }
-pub fn ncpixel_set_a(arg_pixel: [*c]u32, arg_a: c_int) callconv(.C) c_int {
+pub fn ncpixel_set_a(arg_pixel: [*c]u32, arg_a: c_uint) callconv(.C) c_int {
     var pixel = arg_pixel;
     var a = arg_a;
-    if ((a > @as(c_int, 255)) or (a < @as(c_int, 0))) {
+    if (a > @bitCast(c_uint, @as(c_int, 255))) {
         return -@as(c_int, 1);
     }
-    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 16777215)) | @bitCast(c_ulong, @as(c_long, a << @intCast(@import("std").math.Log2Int(c_int), 24)))))));
+    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 16777215)) | @bitCast(c_ulong, @as(c_ulong, a << @intCast(@import("std").math.Log2Int(c_uint), 24)))))));
     return 0;
 }
-pub fn ncpixel_set_r(arg_pixel: [*c]u32, arg_r: c_int) callconv(.C) c_int {
+pub fn ncpixel_set_r(arg_pixel: [*c]u32, arg_r: c_uint) callconv(.C) c_int {
     var pixel = arg_pixel;
     var r = arg_r;
-    if ((r > @as(c_int, 255)) or (r < @as(c_int, 0))) {
+    if (r > @bitCast(c_uint, @as(c_int, 255))) {
         return -@as(c_int, 1);
     }
-    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4294967040)) | @bitCast(c_ulong, @as(c_long, r))))));
+    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4294967040)) | @bitCast(c_ulong, @as(c_ulong, r))))));
     return 0;
 }
-pub fn ncpixel_set_g(arg_pixel: [*c]u32, arg_g: c_int) callconv(.C) c_int {
+pub fn ncpixel_set_g(arg_pixel: [*c]u32, arg_g: c_uint) callconv(.C) c_int {
     var pixel = arg_pixel;
     var g = arg_g;
-    if ((g > @as(c_int, 255)) or (g < @as(c_int, 0))) {
+    if (g > @bitCast(c_uint, @as(c_int, 255))) {
         return -@as(c_int, 1);
     }
-    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4294902015)) | @bitCast(c_ulong, @as(c_long, g << @intCast(@import("std").math.Log2Int(c_int), 8)))))));
+    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4294902015)) | @bitCast(c_ulong, @as(c_ulong, g << @intCast(@import("std").math.Log2Int(c_uint), 8)))))));
     return 0;
 }
-pub fn ncpixel_set_b(arg_pixel: [*c]u32, arg_b: c_int) callconv(.C) c_int {
+pub fn ncpixel_set_b(arg_pixel: [*c]u32, arg_b: c_uint) callconv(.C) c_int {
     var pixel = arg_pixel;
     var b = arg_b;
-    if ((b > @as(c_int, 255)) or (b < @as(c_int, 0))) {
+    if (b > @bitCast(c_uint, @as(c_int, 255))) {
         return -@as(c_int, 1);
     }
-    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4278255615)) | @bitCast(c_ulong, @as(c_long, b << @intCast(@import("std").math.Log2Int(c_int), 16)))))));
+    pixel.* = __bswap_32(__bswap_32(@bitCast(__uint32_t, @truncate(c_uint, (@bitCast(c_ulong, @as(c_ulong, __bswap_32(__bswap_32(pixel.*)))) & @as(c_ulong, 4278255615)) | @bitCast(c_ulong, @as(c_ulong, b << @intCast(@import("std").math.Log2Int(c_uint), 16)))))));
     return 0;
 }
 pub fn ncpixel(arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) u32 {
@@ -3400,31 +3453,31 @@ pub fn ncpixel(arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) u32 {
     var g = arg_g;
     var b = arg_b;
     var pixel: u32 = 0;
-    _ = ncpixel_set_a(&pixel, @as(c_int, 255));
+    _ = ncpixel_set_a(&pixel, @bitCast(c_uint, @as(c_int, 255)));
     if (r < @as(c_int, 0)) {
         r = 0;
     }
     if (r > @as(c_int, 255)) {
         r = 255;
     }
-    _ = ncpixel_set_r(&pixel, r);
+    _ = ncpixel_set_r(&pixel, @bitCast(c_uint, r));
     if (g < @as(c_int, 0)) {
         g = 0;
     }
     if (g > @as(c_int, 255)) {
         g = 255;
     }
-    _ = ncpixel_set_g(&pixel, g);
+    _ = ncpixel_set_g(&pixel, @bitCast(c_uint, g));
     if (b < @as(c_int, 0)) {
         b = 0;
     }
     if (b > @as(c_int, 255)) {
         b = 255;
     }
-    _ = ncpixel_set_b(&pixel, b);
+    _ = ncpixel_set_b(&pixel, @bitCast(c_uint, b));
     return pixel;
 }
-pub fn ncpixel_set_rgb8(arg_pixel: [*c]u32, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
+pub fn ncpixel_set_rgb8(arg_pixel: [*c]u32, arg_r: c_uint, arg_g: c_uint, arg_b: c_uint) callconv(.C) c_int {
     var pixel = arg_pixel;
     var r = arg_r;
     var g = arg_g;
@@ -3484,16 +3537,14 @@ pub extern fn notcurses_cursor_yx(nc: ?*struct_notcurses, y: [*c]c_int, x: [*c]c
 pub extern fn notcurses_cursor_disable(nc: ?*struct_notcurses) c_int;
 pub extern fn ncplane_greyscale(n: ?*struct_ncplane) void;
 pub const struct_ncselector_item = extern struct {
-    option: [*c]u8,
-    desc: [*c]u8,
-    opcolumns: usize,
-    desccolumns: usize,
+    option: [*c]const u8,
+    desc: [*c]const u8,
 };
 pub const struct_ncselector_options = extern struct {
-    title: [*c]u8,
-    secondary: [*c]u8,
-    footer: [*c]u8,
-    items: [*c]struct_ncselector_item,
+    title: [*c]const u8,
+    secondary: [*c]const u8,
+    footer: [*c]const u8,
+    items: [*c]const struct_ncselector_item,
     defidx: c_uint,
     maxdisplay: c_uint,
     opchannels: u64,
@@ -3514,15 +3565,15 @@ pub extern fn ncselector_nextitem(n: ?*struct_ncselector) [*c]const u8;
 pub extern fn ncselector_offer_input(n: ?*struct_ncselector, nc: [*c]const ncinput) bool;
 pub extern fn ncselector_destroy(n: ?*struct_ncselector, item: [*c][*c]u8) void;
 pub const struct_ncmselector_item = extern struct {
-    option: [*c]u8,
-    desc: [*c]u8,
+    option: [*c]const u8,
+    desc: [*c]const u8,
     selected: bool,
 };
 pub const struct_ncmultiselector_options = extern struct {
-    title: [*c]u8,
-    secondary: [*c]u8,
-    footer: [*c]u8,
-    items: [*c]struct_ncmselector_item,
+    title: [*c]const u8,
+    secondary: [*c]const u8,
+    footer: [*c]const u8,
+    items: [*c]const struct_ncmselector_item,
     maxdisplay: c_uint,
     opchannels: u64,
     descchannels: u64,
@@ -3562,11 +3613,11 @@ pub extern fn nctree_prev(n: ?*struct_nctree) ?*c_void;
 pub extern fn nctree_goto(n: ?*struct_nctree, spec: [*c]const c_uint, failspec: [*c]c_int) ?*c_void;
 pub extern fn nctree_destroy(n: ?*struct_nctree) void;
 pub const struct_ncmenu_item = extern struct {
-    desc: [*c]u8,
+    desc: [*c]const u8,
     shortcut: ncinput,
 };
 pub const struct_ncmenu_section = extern struct {
-    name: [*c]u8,
+    name: [*c]const u8,
     itemcount: c_int,
     items: [*c]struct_ncmenu_item,
     shortcut: ncinput,
@@ -3610,7 +3661,7 @@ pub const struct_nctabbed_options = extern struct {
     selchan: u64,
     hdrchan: u64,
     sepchan: u64,
-    separator: [*c]u8,
+    separator: [*c]const u8,
     flags: u64,
 };
 pub const nctabbed_options = struct_nctabbed_options;
@@ -3730,488 +3781,26 @@ pub extern fn ncreader_write_egc(n: ?*struct_ncreader, egc: [*c]const u8) c_int;
 pub extern fn ncreader_contents(n: ?*const struct_ncreader) [*c]u8;
 pub extern fn ncreader_destroy(n: ?*struct_ncreader, contents: [*c][*c]u8) void;
 pub extern fn notcurses_debug(nc: ?*const struct_notcurses, debugfp: [*c]FILE) void;
-pub fn ncplane_align(arg_n: ?*const struct_ncplane, arg_align: ncalign_e, arg_c: c_int) callconv(.C) c_int {
-    var n = arg_n;
-    var @"align" = arg_align;
-    var c = arg_c;
-    return ncplane_halign(n, @"align", c);
-}
-pub fn cell_init(arg_c: [*c]nccell) callconv(.C) void {
-    var c = arg_c;
-    nccell_init(c);
-}
-pub extern fn cell_load(n: ?*struct_ncplane, c: [*c]nccell, gcluster: [*c]const u8) c_int;
-pub fn cell_prime(arg_n: ?*struct_ncplane, arg_c: [*c]nccell, arg_gcluster: [*c]const u8, arg_stylemask: u32, arg_channels: u64) callconv(.C) c_int {
-    var n = arg_n;
-    var c = arg_c;
-    var gcluster = arg_gcluster;
-    var stylemask = arg_stylemask;
-    var channels = arg_channels;
-    return nccell_prime(n, c, gcluster, stylemask, channels);
-}
 pub extern fn cell_duplicate(n: ?*struct_ncplane, targ: [*c]nccell, c: [*c]const nccell) c_int;
 pub extern fn cell_release(n: ?*struct_ncplane, c: [*c]nccell) void;
-pub fn ncvisual_default_blitter(arg_utf8: bool, arg_scale: ncscale_e) callconv(.C) ncblitter_e {
-    var utf8 = arg_utf8;
-    var scale = arg_scale;
-    if (utf8) {
-        if (scale == @bitCast(c_uint, NCSCALE_STRETCH)) {
-            return @bitCast(c_uint, NCBLIT_3x2);
-        }
-        return @bitCast(c_uint, NCBLIT_2x1);
-    }
-    return @bitCast(c_uint, NCBLIT_1x1);
-}
-pub fn cell_set_styles(arg_c: [*c]nccell, arg_stylebits: c_uint) callconv(.C) void {
-    var c = arg_c;
-    var stylebits = arg_stylebits;
-    nccell_set_styles(c, stylebits);
-}
-pub fn cell_styles(arg_c: [*c]const nccell) callconv(.C) c_uint {
-    var c = arg_c;
-    return nccell_styles(c);
-}
-pub fn cell_on_styles(arg_c: [*c]nccell, arg_stylebits: c_uint) callconv(.C) void {
-    var c = arg_c;
-    var stylebits = arg_stylebits;
-    nccell_on_styles(c, stylebits);
-}
-pub fn cell_off_styles(arg_c: [*c]nccell, arg_stylebits: c_uint) callconv(.C) void {
-    var c = arg_c;
-    var stylebits = arg_stylebits;
-    nccell_off_styles(c, stylebits);
-}
-pub fn cell_set_fg_default(arg_c: [*c]nccell) callconv(.C) void {
-    var c = arg_c;
-    nccell_set_fg_default(c);
-}
-pub fn cell_set_bg_default(arg_c: [*c]nccell) callconv(.C) void {
-    var c = arg_c;
-    nccell_set_bg_default(c);
-}
-pub fn cell_set_fg_alpha(arg_c: [*c]nccell, arg_alpha: c_int) callconv(.C) c_int {
-    var c = arg_c;
-    var alpha = arg_alpha;
-    return nccell_set_fg_alpha(c, alpha);
-}
-pub fn cell_set_bg_alpha(arg_c: [*c]nccell, arg_alpha: c_int) callconv(.C) c_int {
-    var c = arg_c;
-    var alpha = arg_alpha;
-    return nccell_set_bg_alpha(c, alpha);
-}
-pub fn cell_double_wide_p(arg_c: [*c]const nccell) callconv(.C) bool {
-    var c = arg_c;
-    return nccell_double_wide_p(c);
-}
-pub fn cell_wide_right_p(arg_c: [*c]const nccell) callconv(.C) bool {
-    var c = arg_c;
-    return nccell_wide_right_p(c);
-}
-pub fn cell_wide_left_p(arg_c: [*c]const nccell) callconv(.C) bool {
-    var c = arg_c;
-    return nccell_wide_left_p(c);
-}
-pub extern fn cell_extended_gcluster(n: ?*const struct_ncplane, c: [*c]const nccell) [*c]const u8;
-pub fn cell_strdup(arg_n: ?*const struct_ncplane, arg_c: [*c]const nccell) callconv(.C) [*c]u8 {
-    var n = arg_n;
-    var c = arg_c;
-    return nccell_strdup(n, c);
-}
-pub fn cell_extract(arg_n: ?*const struct_ncplane, arg_c: [*c]const nccell, arg_stylemask: [*c]u16, arg_channels: [*c]u64) callconv(.C) [*c]u8 {
-    var n = arg_n;
-    var c = arg_c;
-    var stylemask = arg_stylemask;
-    var channels = arg_channels;
-    return nccell_extract(n, c, stylemask, channels);
-}
-pub fn cellcmp(arg_n1: ?*const struct_ncplane, noalias arg_c1: [*c]const nccell, arg_n2: ?*const struct_ncplane, noalias arg_c2: [*c]const nccell) callconv(.C) bool {
-    var n1 = arg_n1;
-    var c1 = arg_c1;
-    var n2 = arg_n2;
-    var c2 = arg_c2;
-    return nccellcmp(n1, c1, n2, c2);
-}
-pub fn cell_load_char(arg_n: ?*struct_ncplane, arg_c: [*c]nccell, arg_ch: u8) callconv(.C) c_int {
-    var n = arg_n;
-    var c = arg_c;
-    var ch = arg_ch;
-    return nccell_load_char(n, c, ch);
-}
-pub fn cell_load_egc32(arg_n: ?*struct_ncplane, arg_c: [*c]nccell, arg_egc: u32) callconv(.C) c_int {
-    var n = arg_n;
-    var c = arg_c;
-    var egc = arg_egc;
-    return nccell_load_egc32(n, c, egc);
-}
 pub extern fn ncplane_new(n: ?*struct_ncplane, rows: c_int, cols: c_int, y: c_int, x: c_int, @"opaque": ?*c_void, name: [*c]const u8) ?*struct_ncplane;
-pub fn cell_fg_rgb(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_fg_rgb(cl);
-}
-pub fn cell_bg_rgb(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_bg_rgb(cl);
-}
-pub fn cell_fg_alpha(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_fg_alpha(cl);
-}
-pub fn cell_bg_alpha(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_bg_alpha(cl);
-}
-pub fn cell_fg_rgb8(arg_cl: [*c]const nccell, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) u32 {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return nccell_fg_rgb8(cl, r, g, b);
-}
-pub fn cell_bg_rgb8(arg_cl: [*c]const nccell, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) u32 {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return nccell_bg_rgb8(cl, r, g, b);
-}
-pub fn cell_set_fg_rgb8(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return nccell_set_fg_rgb8(cl, r, g, b);
-}
-pub fn cell_set_fg_rgb8_clipped(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    nccell_set_fg_rgb8_clipped(cl, r, g, b);
-}
-pub fn cell_set_fg_rgb(arg_c: [*c]nccell, arg_channel: u32) callconv(.C) c_int {
-    var c = arg_c;
-    var channel = arg_channel;
-    return nccell_set_fg_rgb(c, channel);
-}
-pub fn cell_set_fg_palindex(arg_cl: [*c]nccell, arg_idx: c_int) callconv(.C) c_int {
-    var cl = arg_cl;
-    var idx = arg_idx;
-    return nccell_set_fg_palindex(cl, idx);
-}
-pub fn cell_fg_palindex(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_fg_palindex(cl);
-}
-pub fn cell_set_bg_rgb8(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return nccell_set_bg_rgb8(cl, r, g, b);
-}
-pub fn cell_set_bg_rgb8_clipped(arg_cl: [*c]nccell, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
-    var cl = arg_cl;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    nccell_set_bg_rgb8_clipped(cl, r, g, b);
-}
-pub fn cell_set_bg_rgb(arg_c: [*c]nccell, arg_channel: u32) callconv(.C) c_int {
-    var c = arg_c;
-    var channel = arg_channel;
-    return nccell_set_bg_rgb(c, channel);
-}
-pub fn cell_set_bg_palindex(arg_cl: [*c]nccell, arg_idx: c_int) callconv(.C) c_int {
-    var cl = arg_cl;
-    var idx = arg_idx;
-    return nccell_set_bg_palindex(cl, idx);
-}
-pub fn cell_bg_palindex(arg_cl: [*c]const nccell) callconv(.C) u32 {
-    var cl = arg_cl;
-    return nccell_bg_palindex(cl);
-}
-pub fn cell_fg_default_p(arg_cl: [*c]const nccell) callconv(.C) bool {
-    var cl = arg_cl;
-    return nccell_fg_default_p(cl);
-}
-pub fn cell_fg_palindex_p(arg_cl: [*c]const nccell) callconv(.C) bool {
-    var cl = arg_cl;
-    return nccell_fg_palindex_p(cl);
-}
-pub fn cell_bg_default_p(arg_cl: [*c]const nccell) callconv(.C) bool {
-    var cl = arg_cl;
-    return nccell_bg_default_p(cl);
-}
-pub fn cell_bg_palindex_p(arg_cl: [*c]const nccell) callconv(.C) bool {
-    var cl = arg_cl;
-    return nccell_bg_palindex_p(cl);
-}
 pub extern fn ncplane_styles_set(n: ?*struct_ncplane, stylebits: c_uint) void;
 pub extern fn ncplane_styles_on(n: ?*struct_ncplane, stylebits: c_uint) void;
 pub extern fn ncplane_styles_off(n: ?*struct_ncplane, stylebits: c_uint) void;
 pub extern fn cells_rounded_box(n: ?*struct_ncplane, styles: u32, channels: u64, ul: [*c]nccell, ur: [*c]nccell, ll: [*c]nccell, lr: [*c]nccell, hl: [*c]nccell, vl: [*c]nccell) c_int;
 pub extern fn cells_double_box(n: ?*struct_ncplane, styles: u32, channels: u64, ul: [*c]nccell, ur: [*c]nccell, ll: [*c]nccell, lr: [*c]nccell, hl: [*c]nccell, vl: [*c]nccell) c_int;
-pub fn ncplane_rgba(arg_n: ?*const struct_ncplane, arg_blit: ncblitter_e, arg_begy: c_int, arg_begx: c_int, arg_leny: c_int, arg_lenx: c_int) callconv(.C) [*c]u32 {
-    var n = arg_n;
-    var blit = arg_blit;
-    var begy = arg_begy;
-    var begx = arg_begx;
-    var leny = arg_leny;
-    var lenx = arg_lenx;
-    return ncplane_as_rgba(n, blit, begy, begx, leny, lenx, null, null);
-}
-pub fn ncvisual_geom(arg_nc: ?*const struct_notcurses, arg_n: ?*const struct_ncvisual, arg_vopts: [*c]const struct_ncvisual_options, arg_y: [*c]c_int, arg_x: [*c]c_int, arg_scaley: [*c]c_int, arg_scalex: [*c]c_int) callconv(.C) c_int {
-    var nc = arg_nc;
-    var n = arg_n;
-    var vopts = arg_vopts;
-    var y = arg_y;
-    var x = arg_x;
-    var scaley = arg_scaley;
-    var scalex = arg_scalex;
-    return ncvisual_blitter_geom(nc, n, vopts, y, x, scaley, scalex, null);
-}
 pub extern fn nctablet_ncplane(t: ?*struct_nctablet) ?*struct_ncplane;
 pub extern fn palette256_new(nc: ?*struct_notcurses) [*c]ncpalette;
 pub extern fn palette256_use(nc: ?*struct_notcurses, p: [*c]const ncpalette) c_int;
-pub fn palette256_set_rgb8(arg_p: [*c]ncpalette, arg_idx: c_int, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var p = arg_p;
-    var idx = arg_idx;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncpalette_set_rgb8(p, idx, r, g, b);
-}
-pub fn palette256_set(arg_p: [*c]ncpalette, arg_idx: c_int, arg_rgb: c_uint) callconv(.C) c_int {
-    var p = arg_p;
-    var idx = arg_idx;
-    var rgb = arg_rgb;
-    return ncpalette_set(p, idx, rgb);
-}
-pub fn palette256_get_rgb8(arg_p: [*c]const ncpalette, arg_idx: c_int, noalias arg_r: [*c]c_uint, noalias arg_g: [*c]c_uint, noalias arg_b: [*c]c_uint) callconv(.C) c_int {
-    var p = arg_p;
-    var idx = arg_idx;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncpalette_get_rgb8(p, idx, r, g, b);
-}
 pub extern fn palette256_free(p: [*c]ncpalette) void;
-pub fn channel_r(arg_channel: u32) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_r(channel);
-}
-pub fn channel_g(arg_channel: u32) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_g(channel);
-}
-pub fn channel_b(arg_channel: u32) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_b(channel);
-}
-pub fn channel_rgb8(arg_channel: u32, noalias arg_r: [*c]c_uint, noalias arg_g: [*c]c_uint, noalias arg_b: [*c]c_uint) callconv(.C) c_uint {
-    var channel = arg_channel;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannel_rgb8(channel, r, g, b);
-}
-pub fn channel_set_rgb8(arg_channel: [*c]u32, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var channel = arg_channel;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannel_set_rgb8(channel, r, g, b);
-}
-pub fn channel_set_rgb8_clipped(arg_channel: [*c]c_uint, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
-    var channel = arg_channel;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannel_set_rgb8_clipped(channel, r, g, b);
-}
-pub fn channel_set(arg_channel: [*c]c_uint, arg_rgb: c_uint) callconv(.C) c_int {
-    var channel = arg_channel;
-    var rgb = arg_rgb;
-    return ncchannel_set(channel, rgb);
-}
-pub fn channel_alpha(arg_channel: c_uint) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_alpha(channel);
-}
-pub fn channel_palindex(arg_channel: u32) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_palindex(channel);
-}
-pub fn channel_set_alpha(arg_channel: [*c]c_uint, arg_alpha: c_uint) callconv(.C) c_int {
-    var channel = arg_channel;
-    var alpha = arg_alpha;
-    return ncchannel_set_alpha(channel, alpha);
-}
-pub fn channel_set_palindex(arg_channel: [*c]u32, arg_idx: c_int) callconv(.C) c_int {
-    var channel = arg_channel;
-    var idx = arg_idx;
-    return ncchannel_set_palindex(channel, idx);
-}
-pub fn channel_default_p(arg_channel: c_uint) callconv(.C) bool {
-    var channel = arg_channel;
-    return ncchannel_default_p(channel);
-}
-pub fn channel_palindex_p(arg_channel: c_uint) callconv(.C) bool {
-    var channel = arg_channel;
-    return ncchannel_palindex_p(channel);
-}
-pub fn channel_set_default(arg_channel: [*c]c_uint) callconv(.C) c_uint {
-    var channel = arg_channel;
-    return ncchannel_set_default(channel);
-}
-pub fn channels_bchannel(arg_channels: u64) callconv(.C) u32 {
-    var channels = arg_channels;
-    return ncchannels_bchannel(channels);
-}
-pub fn channels_fchannel(arg_channels: u64) callconv(.C) u32 {
-    var channels = arg_channels;
-    return ncchannels_fchannel(channels);
-}
-pub fn channels_set_bchannel(arg_channels: [*c]u64, arg_channel: u32) callconv(.C) u64 {
-    var channels = arg_channels;
-    var channel = arg_channel;
-    return ncchannels_set_bchannel(channels, channel);
-}
-pub fn channels_set_fchannel(arg_channels: [*c]u64, arg_channel: u32) callconv(.C) u64 {
-    var channels = arg_channels;
-    var channel = arg_channel;
-    return ncchannels_set_fchannel(channels, channel);
-}
-pub fn channels_combine(arg_fchan: u32, arg_bchan: u32) callconv(.C) u64 {
-    var fchan = arg_fchan;
-    var bchan = arg_bchan;
-    return ncchannels_combine(fchan, bchan);
-}
-pub fn channels_fg_palindex(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_fg_palindex(channels);
-}
-pub fn channels_bg_palindex(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_bg_palindex(channels);
-}
-pub fn channels_fg_rgb(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_fg_rgb(channels);
-}
-pub fn channels_bg_rgb(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_bg_rgb(channels);
-}
-pub fn channels_fg_alpha(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_fg_alpha(channels);
-}
-pub fn channels_bg_alpha(arg_channels: u64) callconv(.C) c_uint {
-    var channels = arg_channels;
-    return ncchannels_bg_alpha(channels);
-}
-pub fn channels_fg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) c_uint {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannels_fg_rgb8(channels, r, g, b);
-}
-pub fn channels_bg_rgb8(arg_channels: u64, arg_r: [*c]c_uint, arg_g: [*c]c_uint, arg_b: [*c]c_uint) callconv(.C) c_uint {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannels_bg_rgb8(channels, r, g, b);
-}
-pub fn channels_set_fg_rgb8(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannels_set_fg_rgb8(channels, r, g, b);
-}
-pub fn channels_set_fg_rgb8_clipped(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    ncchannels_set_fg_rgb8_clipped(channels, r, g, b);
-}
-pub fn channels_set_fg_alpha(arg_channels: [*c]u64, arg_alpha: c_uint) callconv(.C) c_int {
-    var channels = arg_channels;
-    var alpha = arg_alpha;
-    return ncchannels_set_fg_alpha(channels, alpha);
-}
-pub fn channels_set_fg_palindex(arg_channels: [*c]u64, arg_idx: c_int) callconv(.C) c_int {
-    var channels = arg_channels;
-    var idx = arg_idx;
-    return ncchannels_set_bg_palindex(channels, idx);
-}
-pub fn channels_set_fg_rgb(arg_channels: [*c]u64, arg_rgb: c_uint) callconv(.C) c_int {
-    var channels = arg_channels;
-    var rgb = arg_rgb;
-    return ncchannels_set_fg_rgb(channels, rgb);
-}
-pub fn channels_set_bg_rgb8(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) c_int {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    return ncchannels_set_bg_rgb8(channels, r, g, b);
-}
-pub fn channels_set_bg_rgb8_clipped(arg_channels: [*c]u64, arg_r: c_int, arg_g: c_int, arg_b: c_int) callconv(.C) void {
-    var channels = arg_channels;
-    var r = arg_r;
-    var g = arg_g;
-    var b = arg_b;
-    ncchannels_set_bg_rgb8_clipped(channels, r, g, b);
-}
-pub fn channels_set_bg_alpha(arg_channels: [*c]u64, arg_alpha: c_uint) callconv(.C) c_int {
-    var channels = arg_channels;
-    var alpha = arg_alpha;
-    return ncchannels_set_bg_alpha(channels, alpha);
-}
-pub fn channels_set_bg_palindex(arg_channels: [*c]u64, arg_idx: c_int) callconv(.C) c_int {
-    var channels = arg_channels;
-    var idx = arg_idx;
-    return ncchannels_set_bg_palindex(channels, idx);
-}
-pub fn channels_set_bg_rgb(arg_channels: [*c]u64, arg_rgb: c_uint) callconv(.C) c_int {
-    var channels = arg_channels;
-    var rgb = arg_rgb;
-    return ncchannels_set_bg_rgb(channels, rgb);
-}
-pub fn channels_fg_default_p(arg_channels: u64) callconv(.C) bool {
-    var channels = arg_channels;
-    return ncchannels_fg_default_p(channels);
-}
-pub fn channels_fg_palindex_p(arg_channels: u64) callconv(.C) bool {
-    var channels = arg_channels;
-    return ncchannels_fg_palindex_p(channels);
-}
-pub fn channels_bg_default_p(arg_channels: u64) callconv(.C) bool {
-    var channels = arg_channels;
-    return ncchannels_bg_default_p(channels);
-}
-pub fn channels_bg_palindex_p(arg_channels: u64) callconv(.C) bool {
-    var channels = arg_channels;
-    return ncchannels_bg_palindex_p(channels);
-}
-pub fn channels_set_fg_default(arg_channels: [*c]u64) callconv(.C) u64 {
-    var channels = arg_channels;
-    return ncchannels_set_fg_default(channels);
-}
-pub fn channels_set_bg_default(arg_channels: [*c]u64) callconv(.C) u64 {
-    var channels = arg_channels;
-    return ncchannels_set_bg_default(channels);
-}
 pub extern fn ncvisual_inflate(n: ?*struct_ncvisual, scale: c_int) c_int;
 pub extern fn notcurses_render_to_buffer(nc: ?*struct_notcurses, buf: [*c][*c]u8, buflen: [*c]usize) c_int;
 pub extern fn notcurses_render_to_file(nc: ?*struct_notcurses, fp: [*c]FILE) c_int;
-pub const cell = nccell;
 pub extern fn notcurses_debug_caps(nc: ?*const struct_notcurses, debugfp: [*c]FILE) void;
+pub extern fn nccell_width(n: ?*const struct_ncplane, c: [*c]const nccell) c_int;
+pub extern fn ncvisual_subtitle(ncv: ?*const struct_ncvisual) [*c]u8;
+pub extern fn notcurses_getc(nc: ?*struct_notcurses, ts: [*c]const struct_timespec, unused: ?*const c_void, ni: [*c]ncinput) u32;
+pub extern fn ncdirect_getc(nc: ?*struct_ncdirect, ts: [*c]const struct_timespec, unused: ?*const c_void, ni: [*c]ncinput) u32;
 pub const __INTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `L`"); // (no file):67:9
 pub const __UINTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `UL`"); // (no file):73:9
 pub const __INT64_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `L`"); // (no file):164:9
@@ -4219,76 +3808,82 @@ pub const __UINT32_C_SUFFIX__ = @compileError("unable to translate macro: undefi
 pub const __UINT64_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `UL`"); // (no file):194:9
 pub const __seg_gs = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // (no file):312:9
 pub const __seg_fs = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // (no file):313:9
-pub const __GLIBC_USE = @compileError("unable to translate macro: undefined identifier `__GLIBC_USE_`"); // /usr/include/features.h:179:9
-pub const __THROW = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:55:11
-pub const __THROWNL = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:56:11
-pub const __NTH = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:57:11
-pub const __NTHNL = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:58:11
-pub const __glibc_clang_has_extension = @compileError("unable to translate macro: undefined identifier `__has_extension`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:96:10
-pub const __CONCAT = @compileError("unable to translate C expr: unexpected token .HashHash"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:109:9
-pub const __STRING = @compileError("unable to translate C expr: unexpected token .Hash"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:110:9
-pub const __warnattr = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:144:10
-pub const __errordecl = @compileError("unable to translate C expr: unexpected token .Keyword_extern"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:145:10
-pub const __flexarr = @compileError("unable to translate C expr: unexpected token .LBracket"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:153:10
-pub const __REDIRECT = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:184:10
-pub const __REDIRECT_NTH = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:191:11
-pub const __REDIRECT_NTHNL = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:193:11
-pub const __ASMNAME2 = @compileError("unable to translate C expr: unexpected token .Identifier"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:197:10
-pub const __attribute_malloc__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:218:10
-pub const __attribute_alloc_size__ = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:229:10
-pub const __attribute_pure__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:236:10
-pub const __attribute_const__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:243:10
-pub const __attribute_used__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:252:10
-pub const __attribute_noinline__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:253:10
-pub const __attribute_deprecated__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:261:10
-pub const __attribute_deprecated_msg__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:271:10
-pub const __attribute_format_arg__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:284:10
-pub const __attribute_format_strfmon__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:294:10
-pub const __nonnull = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:303:10
-pub const __attribute_warn_unused_result__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:311:10
-pub const __always_inline = @compileError("unable to translate macro: undefined identifier `__inline`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:329:10
-pub const __extern_inline = @compileError("unable to translate macro: undefined identifier `__inline`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:356:11
-pub const __extern_always_inline = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:357:11
-pub const __restrict_arr = @compileError("unable to translate macro: undefined identifier `__restrict`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:397:10
-pub const __glibc_has_attribute = @compileError("unable to translate macro: undefined identifier `__has_attribute`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:420:10
-pub const __attribute_copy__ = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:451:10
-pub const __LDBL_REDIR2_DECL = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:522:10
-pub const __LDBL_REDIR_DECL = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:523:10
-pub const __glibc_macro_warning1 = @compileError("unable to translate macro: undefined identifier `_Pragma`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:537:10
-pub const __glibc_macro_warning = @compileError("unable to translate macro: undefined identifier `GCC`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:538:10
-pub const __attr_access = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:569:11
-pub const __attribute_returns_twice__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/x86_64-linux-gnu/sys/cdefs.h:575:10
-pub const __STD_TYPE = @compileError("unable to translate C expr: unexpected token .Keyword_typedef"); // /usr/include/x86_64-linux-gnu/bits/types.h:137:10
-pub const __FSID_T_TYPE = @compileError("unable to translate macro: undefined identifier `__val`"); // /usr/include/x86_64-linux-gnu/bits/typesizes.h:73:9
+pub const __GLIBC_USE = @compileError("unable to translate macro: undefined identifier `__GLIBC_USE_`"); // /usr/include/features.h:186:9
+pub const __glibc_has_attribute = @compileError("unable to translate macro: undefined identifier `__has_attribute`"); // /usr/include/sys/cdefs.h:44:10
+pub const __glibc_has_builtin = @compileError("unable to translate macro: undefined identifier `__has_builtin`"); // /usr/include/sys/cdefs.h:49:10
+pub const __glibc_has_extension = @compileError("unable to translate macro: undefined identifier `__has_extension`"); // /usr/include/sys/cdefs.h:54:10
+pub const __THROW = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:78:11
+pub const __THROWNL = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:79:11
+pub const __NTH = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:80:11
+pub const __NTHNL = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:81:11
+pub const __CONCAT = @compileError("unable to translate C expr: unexpected token .HashHash"); // /usr/include/sys/cdefs.h:123:9
+pub const __STRING = @compileError("unable to translate C expr: unexpected token .Hash"); // /usr/include/sys/cdefs.h:124:9
+pub const __warnattr = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:158:10
+pub const __errordecl = @compileError("unable to translate C expr: unexpected token .Keyword_extern"); // /usr/include/sys/cdefs.h:159:10
+pub const __flexarr = @compileError("unable to translate C expr: unexpected token .LBracket"); // /usr/include/sys/cdefs.h:167:10
+pub const __REDIRECT = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/sys/cdefs.h:198:10
+pub const __REDIRECT_NTH = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/sys/cdefs.h:205:11
+pub const __REDIRECT_NTHNL = @compileError("unable to translate macro: undefined identifier `__asm__`"); // /usr/include/sys/cdefs.h:207:11
+pub const __ASMNAME2 = @compileError("unable to translate C expr: unexpected token .Identifier"); // /usr/include/sys/cdefs.h:211:10
+pub const __attribute_malloc__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:232:10
+pub const __attribute_alloc_size__ = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:243:10
+pub const __attribute_pure__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:250:10
+pub const __attribute_const__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:257:10
+pub const __attribute_maybe_unused__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:263:10
+pub const __attribute_used__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:272:10
+pub const __attribute_noinline__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:273:10
+pub const __attribute_deprecated__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:281:10
+pub const __attribute_deprecated_msg__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:291:10
+pub const __attribute_format_arg__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:304:10
+pub const __attribute_format_strfmon__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:314:10
+pub const __nonnull = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:324:11
+pub const __returns_nonnull = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:337:10
+pub const __attribute_warn_unused_result__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:346:10
+pub const __always_inline = @compileError("unable to translate macro: undefined identifier `__inline`"); // /usr/include/sys/cdefs.h:364:10
+pub const __attribute_artificial__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:373:10
+pub const __extern_inline = @compileError("unable to translate macro: undefined identifier `__inline`"); // /usr/include/sys/cdefs.h:391:11
+pub const __extern_always_inline = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:392:11
+pub const __restrict_arr = @compileError("unable to translate macro: undefined identifier `__restrict`"); // /usr/include/sys/cdefs.h:435:10
+pub const __attribute_copy__ = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:484:10
+pub const __LDBL_REDIR2_DECL = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:560:10
+pub const __LDBL_REDIR_DECL = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:561:10
+pub const __glibc_macro_warning1 = @compileError("unable to translate macro: undefined identifier `_Pragma`"); // /usr/include/sys/cdefs.h:575:10
+pub const __glibc_macro_warning = @compileError("unable to translate macro: undefined identifier `GCC`"); // /usr/include/sys/cdefs.h:576:10
+pub const __attr_access = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:612:11
+pub const __attr_access_none = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:613:11
+pub const __attr_dealloc = @compileError("unable to translate C expr: unexpected token .Eof"); // /usr/include/sys/cdefs.h:623:10
+pub const __attribute_returns_twice__ = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/sys/cdefs.h:630:10
+pub const __STD_TYPE = @compileError("unable to translate C expr: unexpected token .Keyword_typedef"); // /usr/include/bits/types.h:137:10
+pub const __FSID_T_TYPE = @compileError("unable to translate macro: undefined identifier `__val`"); // /usr/include/bits/typesizes.h:73:9
 pub const __exctype = @compileError("unable to translate C expr: unexpected token .Keyword_extern"); // /usr/include/ctype.h:102:9
 pub const __tobody = @compileError("unable to translate macro: undefined identifier `__extension__`"); // /usr/include/ctype.h:155:9
 pub const __exctype_l = @compileError("unable to translate C expr: unexpected token .Keyword_extern"); // /usr/include/ctype.h:244:10
-pub const __f32 = @compileError("unable to translate macro: undefined identifier `f`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:91:12
-pub const __f64x = @compileError("unable to translate macro: undefined identifier `l`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:120:13
-pub const __CFLOAT32 = @compileError("unable to translate: TODO _Complex"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:149:12
-pub const __CFLOAT64 = @compileError("unable to translate: TODO _Complex"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:160:13
-pub const __CFLOAT32X = @compileError("unable to translate: TODO _Complex"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:169:12
-pub const __CFLOAT64X = @compileError("unable to translate: TODO _Complex"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:178:13
-pub const __builtin_nansf32 = @compileError("unable to translate macro: undefined identifier `__builtin_nansf`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:221:12
-pub const __builtin_huge_valf64 = @compileError("unable to translate macro: undefined identifier `__builtin_huge_val`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:255:13
-pub const __builtin_inff64 = @compileError("unable to translate macro: undefined identifier `__builtin_inf`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:256:13
-pub const __builtin_nanf64 = @compileError("unable to translate macro: undefined identifier `__builtin_nan`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:257:13
-pub const __builtin_nansf64 = @compileError("unable to translate macro: undefined identifier `__builtin_nans`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:258:13
-pub const __builtin_huge_valf32x = @compileError("unable to translate macro: undefined identifier `__builtin_huge_val`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:272:12
-pub const __builtin_inff32x = @compileError("unable to translate macro: undefined identifier `__builtin_inf`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:273:12
-pub const __builtin_nanf32x = @compileError("unable to translate macro: undefined identifier `__builtin_nan`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:274:12
-pub const __builtin_nansf32x = @compileError("unable to translate macro: undefined identifier `__builtin_nans`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:275:12
-pub const __builtin_huge_valf64x = @compileError("unable to translate macro: undefined identifier `__builtin_huge_vall`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:289:13
-pub const __builtin_inff64x = @compileError("unable to translate macro: undefined identifier `__builtin_infl`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:290:13
-pub const __builtin_nanf64x = @compileError("unable to translate macro: undefined identifier `__builtin_nanl`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:291:13
-pub const __builtin_nansf64x = @compileError("unable to translate macro: undefined identifier `__builtin_nansl`"); // /usr/include/x86_64-linux-gnu/bits/floatn-common.h:292:13
-pub const va_start = @compileError("unable to translate macro: undefined identifier `__builtin_va_start`"); // /data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1324+598db831f/lib/include/stdarg.h:17:9
-pub const va_end = @compileError("unable to translate macro: undefined identifier `__builtin_va_end`"); // /data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1324+598db831f/lib/include/stdarg.h:18:9
-pub const va_arg = @compileError("unable to translate macro: undefined identifier `__builtin_va_arg`"); // /data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1324+598db831f/lib/include/stdarg.h:19:9
-pub const __va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1324+598db831f/lib/include/stdarg.h:24:9
-pub const va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1324+598db831f/lib/include/stdarg.h:27:9
-pub const __getc_unlocked_body = @compileError("TODO postfix inc/dec expr"); // /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:102:9
-pub const __putc_unlocked_body = @compileError("TODO postfix inc/dec expr"); // /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:106:9
+pub const __f32 = @compileError("unable to translate macro: undefined identifier `f`"); // /usr/include/bits/floatn-common.h:91:12
+pub const __f64x = @compileError("unable to translate macro: undefined identifier `l`"); // /usr/include/bits/floatn-common.h:120:13
+pub const __CFLOAT32 = @compileError("unable to translate: TODO _Complex"); // /usr/include/bits/floatn-common.h:149:12
+pub const __CFLOAT64 = @compileError("unable to translate: TODO _Complex"); // /usr/include/bits/floatn-common.h:160:13
+pub const __CFLOAT32X = @compileError("unable to translate: TODO _Complex"); // /usr/include/bits/floatn-common.h:169:12
+pub const __CFLOAT64X = @compileError("unable to translate: TODO _Complex"); // /usr/include/bits/floatn-common.h:178:13
+pub const __builtin_nansf32 = @compileError("unable to translate macro: undefined identifier `__builtin_nansf`"); // /usr/include/bits/floatn-common.h:221:12
+pub const __builtin_huge_valf64 = @compileError("unable to translate macro: undefined identifier `__builtin_huge_val`"); // /usr/include/bits/floatn-common.h:255:13
+pub const __builtin_inff64 = @compileError("unable to translate macro: undefined identifier `__builtin_inf`"); // /usr/include/bits/floatn-common.h:256:13
+pub const __builtin_nanf64 = @compileError("unable to translate macro: undefined identifier `__builtin_nan`"); // /usr/include/bits/floatn-common.h:257:13
+pub const __builtin_nansf64 = @compileError("unable to translate macro: undefined identifier `__builtin_nans`"); // /usr/include/bits/floatn-common.h:258:13
+pub const __builtin_huge_valf32x = @compileError("unable to translate macro: undefined identifier `__builtin_huge_val`"); // /usr/include/bits/floatn-common.h:272:12
+pub const __builtin_inff32x = @compileError("unable to translate macro: undefined identifier `__builtin_inf`"); // /usr/include/bits/floatn-common.h:273:12
+pub const __builtin_nanf32x = @compileError("unable to translate macro: undefined identifier `__builtin_nan`"); // /usr/include/bits/floatn-common.h:274:12
+pub const __builtin_nansf32x = @compileError("unable to translate macro: undefined identifier `__builtin_nans`"); // /usr/include/bits/floatn-common.h:275:12
+pub const __builtin_huge_valf64x = @compileError("unable to translate macro: undefined identifier `__builtin_huge_vall`"); // /usr/include/bits/floatn-common.h:289:13
+pub const __builtin_inff64x = @compileError("unable to translate macro: undefined identifier `__builtin_infl`"); // /usr/include/bits/floatn-common.h:290:13
+pub const __builtin_nanf64x = @compileError("unable to translate macro: undefined identifier `__builtin_nanl`"); // /usr/include/bits/floatn-common.h:291:13
+pub const __builtin_nansf64x = @compileError("unable to translate macro: undefined identifier `__builtin_nansl`"); // /usr/include/bits/floatn-common.h:292:13
+pub const va_start = @compileError("unable to translate macro: undefined identifier `__builtin_va_start`"); // /media/data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1551+8346e011c/lib/include/stdarg.h:17:9
+pub const va_end = @compileError("unable to translate macro: undefined identifier `__builtin_va_end`"); // /media/data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1551+8346e011c/lib/include/stdarg.h:18:9
+pub const va_arg = @compileError("unable to translate macro: undefined identifier `__builtin_va_arg`"); // /media/data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1551+8346e011c/lib/include/stdarg.h:19:9
+pub const __va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /media/data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1551+8346e011c/lib/include/stdarg.h:24:9
+pub const va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /media/data/Projects/Compilers_or_Interpreters/zig-linux-x86_64-0.9.0-dev.1551+8346e011c/lib/include/stdarg.h:27:9
+pub const __getc_unlocked_body = @compileError("TODO postfix inc/dec expr"); // /usr/include/bits/types/struct_FILE.h:102:9
+pub const __putc_unlocked_body = @compileError("TODO postfix inc/dec expr"); // /usr/include/bits/types/struct_FILE.h:106:9
 pub const __INT64_C = @compileError("unable to translate macro: undefined identifier `L`"); // /usr/include/stdint.h:106:11
 pub const __UINT64_C = @compileError("unable to translate macro: undefined identifier `UL`"); // /usr/include/stdint.h:107:11
 pub const INT64_C = @compileError("unable to translate macro: undefined identifier `L`"); // /usr/include/stdint.h:252:11
@@ -4296,40 +3891,40 @@ pub const UINT32_C = @compileError("unable to translate macro: undefined identif
 pub const UINT64_C = @compileError("unable to translate macro: undefined identifier `UL`"); // /usr/include/stdint.h:262:11
 pub const INTMAX_C = @compileError("unable to translate macro: undefined identifier `L`"); // /usr/include/stdint.h:269:11
 pub const UINTMAX_C = @compileError("unable to translate macro: undefined identifier `UL`"); // /usr/include/stdint.h:270:11
-pub const __FD_ZERO = @compileError("unable to translate macro: undefined identifier `__i`"); // /usr/include/x86_64-linux-gnu/bits/select.h:25:9
-pub const __FD_SET = @compileError("unable to translate C expr: expected ')' instead got: PipeEqual"); // /usr/include/x86_64-linux-gnu/bits/select.h:32:9
-pub const __FD_CLR = @compileError("unable to translate C expr: expected ')' instead got: AmpersandEqual"); // /usr/include/x86_64-linux-gnu/bits/select.h:34:9
-pub const __PTHREAD_MUTEX_INITIALIZER = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:56:10
-pub const __PTHREAD_RWLOCK_ELISION_EXTRA = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h:40:11
-pub const __ONCE_FLAG_INIT = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:127:9
-pub const si_pid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:128:9
-pub const si_uid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:129:9
-pub const si_timerid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:130:9
-pub const si_overrun = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:131:9
-pub const si_status = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:132:9
-pub const si_utime = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:133:9
-pub const si_stime = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:134:9
-pub const si_value = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:135:9
-pub const si_int = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:136:9
-pub const si_ptr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:137:9
-pub const si_addr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:138:9
-pub const si_addr_lsb = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:139:9
-pub const si_lower = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:140:9
-pub const si_upper = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:141:9
-pub const si_pkey = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:142:9
-pub const si_band = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:143:9
-pub const si_fd = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:144:9
-pub const si_call_addr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:146:10
-pub const si_syscall = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:147:10
-pub const si_arch = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:148:10
-pub const sigev_notify_function = @compileError("unable to translate macro: undefined identifier `_sigev_un`"); // /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h:45:9
-pub const sigev_notify_attributes = @compileError("unable to translate macro: undefined identifier `_sigev_un`"); // /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h:46:9
-pub const sa_handler = @compileError("unable to translate macro: undefined identifier `__sigaction_handler`"); // /usr/include/x86_64-linux-gnu/bits/sigaction.h:39:10
-pub const sa_sigaction = @compileError("unable to translate macro: undefined identifier `__sigaction_handler`"); // /usr/include/x86_64-linux-gnu/bits/sigaction.h:40:10
-pub const __SOCKADDR_COMMON = @compileError("unable to translate macro: undefined identifier `family`"); // /usr/include/x86_64-linux-gnu/bits/sockaddr.h:34:9
-pub const __SOCKADDR_ARG = @compileError("unable to translate macro: undefined identifier `__restrict`"); // /usr/include/x86_64-linux-gnu/sys/socket.h:58:10
-pub const __CONST_SOCKADDR_ARG = @compileError("unable to translate C expr: unexpected token .Keyword_const"); // /usr/include/x86_64-linux-gnu/sys/socket.h:59:10
-pub const SCM_SRCRT = @compileError("unable to translate macro: undefined identifier `IPV6_RXSRCRT`"); // /usr/include/x86_64-linux-gnu/bits/in.h:178:9
+pub const __FD_ZERO = @compileError("unable to translate macro: undefined identifier `__i`"); // /usr/include/bits/select.h:25:9
+pub const __FD_SET = @compileError("unable to translate C expr: expected ')' instead got: PipeEqual"); // /usr/include/bits/select.h:32:9
+pub const __FD_CLR = @compileError("unable to translate C expr: expected ')' instead got: AmpersandEqual"); // /usr/include/bits/select.h:34:9
+pub const __PTHREAD_MUTEX_INITIALIZER = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/bits/struct_mutex.h:56:10
+pub const __PTHREAD_RWLOCK_ELISION_EXTRA = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/bits/struct_rwlock.h:40:11
+pub const __ONCE_FLAG_INIT = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/bits/thread-shared-types.h:127:9
+pub const si_pid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:128:9
+pub const si_uid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:129:9
+pub const si_timerid = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:130:9
+pub const si_overrun = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:131:9
+pub const si_status = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:132:9
+pub const si_utime = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:133:9
+pub const si_stime = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:134:9
+pub const si_value = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:135:9
+pub const si_int = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:136:9
+pub const si_ptr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:137:9
+pub const si_addr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:138:9
+pub const si_addr_lsb = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:139:9
+pub const si_lower = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:140:9
+pub const si_upper = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:141:9
+pub const si_pkey = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:142:9
+pub const si_band = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:143:9
+pub const si_fd = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:144:9
+pub const si_call_addr = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:146:10
+pub const si_syscall = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:147:10
+pub const si_arch = @compileError("unable to translate macro: undefined identifier `_sifields`"); // /usr/include/bits/types/siginfo_t.h:148:10
+pub const sigev_notify_function = @compileError("unable to translate macro: undefined identifier `_sigev_un`"); // /usr/include/bits/types/sigevent_t.h:45:9
+pub const sigev_notify_attributes = @compileError("unable to translate macro: undefined identifier `_sigev_un`"); // /usr/include/bits/types/sigevent_t.h:46:9
+pub const sa_handler = @compileError("unable to translate macro: undefined identifier `__sigaction_handler`"); // /usr/include/bits/sigaction.h:39:10
+pub const sa_sigaction = @compileError("unable to translate macro: undefined identifier `__sigaction_handler`"); // /usr/include/bits/sigaction.h:40:10
+pub const __SOCKADDR_COMMON = @compileError("unable to translate macro: undefined identifier `family`"); // /usr/include/bits/sockaddr.h:34:9
+pub const __SOCKADDR_ARG = @compileError("unable to translate macro: undefined identifier `__restrict`"); // /usr/include/sys/socket.h:58:10
+pub const __CONST_SOCKADDR_ARG = @compileError("unable to translate C expr: unexpected token .Keyword_const"); // /usr/include/sys/socket.h:59:10
+pub const SCM_SRCRT = @compileError("unable to translate macro: undefined identifier `IPV6_RXSRCRT`"); // /usr/include/bits/in.h:178:9
 pub const s6_addr = @compileError("unable to translate macro: undefined identifier `__in6_u`"); // /usr/include/netinet/in.h:224:9
 pub const s6_addr16 = @compileError("unable to translate macro: undefined identifier `__in6_u`"); // /usr/include/netinet/in.h:226:10
 pub const s6_addr32 = @compileError("unable to translate macro: undefined identifier `__in6_u`"); // /usr/include/netinet/in.h:227:10
@@ -4348,14 +3943,14 @@ pub const IN6_IS_ADDR_MC_LINKLOCAL = @compileError("unable to translate C expr: 
 pub const IN6_IS_ADDR_MC_SITELOCAL = @compileError("unable to translate C expr: unexpected token .Keyword_const"); // /usr/include/netinet/in.h:523:9
 pub const IN6_IS_ADDR_MC_ORGLOCAL = @compileError("unable to translate C expr: unexpected token .Keyword_const"); // /usr/include/netinet/in.h:527:9
 pub const IN6_IS_ADDR_MC_GLOBAL = @compileError("unable to translate C expr: unexpected token .Keyword_const"); // /usr/include/netinet/in.h:531:9
-pub const NCBRAILLEEGCS = @compileError("macro tokenizing failed: TODO unicode escape sequences"); // /usr/local/include/notcurses/ncseqs.h:59:9
-pub const RESTRICT = @compileError("unable to translate C expr: unexpected token .Keyword_restrict"); // /usr/local/include/notcurses/notcurses.h:35:9
-pub const API = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/local/include/notcurses/notcurses.h:38:9
-pub const ALLOC = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/local/include/notcurses/notcurses.h:39:9
-pub const CELL_INITIALIZER = @compileError("unable to translate macro: undefined identifier `wcwidth`"); // /usr/local/include/notcurses/notcurses.h:657:9
-pub const CELL_CHAR_INITIALIZER = @compileError("unable to translate macro: undefined identifier `wcwidth`"); // /usr/local/include/notcurses/notcurses.h:660:9
-pub const CELL_TRIVIAL_INITIALIZER = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/local/include/notcurses/notcurses.h:663:9
-pub const IPREFIXFMT = @compileError("unable to translate macro: undefined identifier `NCMETRIXFWIDTH`"); // /usr/local/include/notcurses/notcurses.h:3074:9
+pub const NCBRAILLEEGCS = @compileError("macro tokenizing failed: TODO unicode escape sequences"); // /usr/include/notcurses/ncseqs.h:59:9
+pub const RESTRICT = @compileError("unable to translate C expr: unexpected token .Keyword_restrict"); // /usr/include/notcurses/notcurses.h:23:9
+pub const API = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/notcurses/notcurses.h:27:9
+pub const ALLOC = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // /usr/include/notcurses/notcurses.h:31:9
+pub const CELL_INITIALIZER = @compileError("unable to translate macro: undefined identifier `wcwidth`"); // /usr/include/notcurses/notcurses.h:662:9
+pub const CELL_CHAR_INITIALIZER = @compileError("unable to translate macro: undefined identifier `wcwidth`"); // /usr/include/notcurses/notcurses.h:665:9
+pub const CELL_TRIVIAL_INITIALIZER = @compileError("unable to translate C expr: unexpected token .LBrace"); // /usr/include/notcurses/notcurses.h:668:9
+pub const IPREFIXFMT = @compileError("unable to translate macro: undefined identifier `NCMETRIXFWIDTH`"); // /usr/include/notcurses/notcurses.h:3303:9
 pub const __llvm__ = @as(c_int, 1);
 pub const __clang__ = @as(c_int, 1);
 pub const __clang_major__ = @as(c_int, 13);
@@ -4749,6 +4344,10 @@ pub const __USE_POSIX199506 = @as(c_int, 1);
 pub const __USE_XOPEN2K = @as(c_int, 1);
 pub const __USE_XOPEN2K8 = @as(c_int, 1);
 pub const _ATFILE_SOURCE = @as(c_int, 1);
+pub const __WORDSIZE = @as(c_int, 64);
+pub const __WORDSIZE_TIME64_COMPAT32 = @as(c_int, 1);
+pub const __SYSCALL_WORDSIZE = @as(c_int, 64);
+pub const __TIMESIZE = __WORDSIZE;
 pub const __USE_MISC = @as(c_int, 1);
 pub const __USE_ATFILE = @as(c_int, 1);
 pub const __USE_FORTIFY_LEVEL = @as(c_int, 0);
@@ -4760,7 +4359,7 @@ pub const __STDC_IEC_559_COMPLEX__ = @as(c_int, 1);
 pub const __STDC_ISO_10646__ = @as(c_long, 201706);
 pub const __GNU_LIBRARY__ = @as(c_int, 6);
 pub const __GLIBC__ = @as(c_int, 2);
-pub const __GLIBC_MINOR__ = @as(c_int, 33);
+pub const __GLIBC_MINOR__ = @as(c_int, 34);
 pub inline fn __GLIBC_PREREQ(maj: anytype, min: anytype) @TypeOf(((__GLIBC__ << @as(c_int, 16)) + __GLIBC_MINOR__) >= ((maj << @as(c_int, 16)) + min)) {
     return ((__GLIBC__ << @as(c_int, 16)) + __GLIBC_MINOR__) >= ((maj << @as(c_int, 16)) + min);
 }
@@ -4793,7 +4392,6 @@ pub inline fn __ASMNAME(cname: anytype) @TypeOf(__ASMNAME2(__USER_LABEL_PREFIX__
     return __ASMNAME2(__USER_LABEL_PREFIX__, cname);
 }
 pub const __wur = "";
-pub const __attribute_artificial__ = "";
 pub const __fortify_function = __extern_always_inline ++ __attribute_artificial__;
 pub inline fn __glibc_unlikely(cond: anytype) @TypeOf(__builtin_expect(cond, @as(c_int, 0))) {
     return __builtin_expect(cond, @as(c_int, 0));
@@ -4802,9 +4400,6 @@ pub inline fn __glibc_likely(cond: anytype) @TypeOf(__builtin_expect(cond, @as(c
     return __builtin_expect(cond, @as(c_int, 1));
 }
 pub const __attribute_nonstring__ = "";
-pub const __WORDSIZE = @as(c_int, 64);
-pub const __WORDSIZE_TIME64_COMPAT32 = @as(c_int, 1);
-pub const __SYSCALL_WORDSIZE = @as(c_int, 64);
 pub const __LDOUBLE_REDIRECTS_TO_FLOAT128_ABI = @as(c_int, 0);
 pub inline fn __LDBL_REDIR1(name: anytype, proto: anytype, alias: anytype) @TypeOf(name ++ proto) {
     _ = alias;
@@ -4827,6 +4422,7 @@ pub inline fn __REDIRECT_NTH_LDBL(name: anytype, proto: anytype, alias: anytype)
     return __REDIRECT_NTH(name, proto, alias);
 }
 pub const __HAVE_GENERIC_SELECTION = @as(c_int, 1);
+pub const __attr_dealloc_free = "";
 pub const __USE_EXTERN_INLINES = @as(c_int, 1);
 pub const __stub___compat_bdflush = "";
 pub const __stub_chflags = "";
@@ -4842,7 +4438,6 @@ pub const _SIZE_T = "";
 pub const NULL = @import("std").zig.c_translation.cast(?*c_void, @as(c_int, 0));
 pub const _BITS_TIME_H = @as(c_int, 1);
 pub const _BITS_TYPES_H = @as(c_int, 1);
-pub const __TIMESIZE = __WORDSIZE;
 pub const __S16_TYPE = c_short;
 pub const __U16_TYPE = c_ushort;
 pub const __S32_TYPE = c_int;
@@ -5015,6 +4610,7 @@ pub const __GLIBC_INTERNAL_STARTING_HEADER_IMPLEMENTATION = "";
 pub const __GLIBC_USE_LIB_EXT2 = @as(c_int, 0);
 pub const __GLIBC_USE_IEC_60559_BFP_EXT = @as(c_int, 0);
 pub const __GLIBC_USE_IEC_60559_BFP_EXT_C2X = @as(c_int, 0);
+pub const __GLIBC_USE_IEC_60559_EXT = @as(c_int, 0);
 pub const __GLIBC_USE_IEC_60559_FUNCS_EXT = @as(c_int, 0);
 pub const __GLIBC_USE_IEC_60559_FUNCS_EXT_C2X = @as(c_int, 0);
 pub const __GLIBC_USE_IEC_60559_TYPES_EXT = @as(c_int, 0);
@@ -5070,6 +4666,7 @@ pub const __FILE_defined = @as(c_int, 1);
 pub const WCHAR_MIN = __WCHAR_MIN;
 pub const WCHAR_MAX = __WCHAR_MAX;
 pub const WEOF = @import("std").zig.c_translation.promoteIntLiteral(c_uint, 0xffffffff, .hexadecimal);
+pub const __attr_dealloc_fclose = "";
 pub const _STDIO_H = @as(c_int, 1);
 pub const _____fpos_t_defined = @as(c_int, 1);
 pub const _____fpos64_t_defined = @as(c_int, 1);
@@ -5587,19 +5184,7 @@ pub const @"bool" = bool;
 pub const @"true" = @as(c_int, 1);
 pub const @"false" = @as(c_int, 0);
 pub const __bool_true_false_are_defined = @as(c_int, 1);
-pub const _BYTESWAP_H = @as(c_int, 1);
-pub inline fn bswap_16(x: anytype) @TypeOf(__bswap_16(x)) {
-    return __bswap_16(x);
-}
-pub inline fn bswap_32(x: anytype) @TypeOf(__bswap_32(x)) {
-    return __bswap_32(x);
-}
-pub inline fn bswap_64(x: anytype) @TypeOf(__bswap_64(x)) {
-    return __bswap_64(x);
-}
-pub inline fn htole(x: anytype) @TypeOf(__bswap_32(htonl(x))) {
-    return __bswap_32(htonl(x));
-}
+pub const NOTCURSES_NCPORT = "";
 pub const _NETINET_IN_H = @as(c_int, 1);
 pub const _SYS_SOCKET_H = @as(c_int, 1);
 pub const __iovec_defined = @as(c_int, 1);
@@ -5842,6 +5427,7 @@ pub const SO_SNDTIMEO_NEW = @as(c_int, 67);
 pub const SO_DETACH_REUSEPORT_BPF = @as(c_int, 68);
 pub const SO_PREFER_BUSY_POLL = @as(c_int, 69);
 pub const SO_BUSY_POLL_BUDGET = @as(c_int, 70);
+pub const SO_NETNS_COOKIE = @as(c_int, 71);
 pub const SO_TIMESTAMP = SO_TIMESTAMP_OLD;
 pub const SO_TIMESTAMPNS = SO_TIMESTAMPNS_OLD;
 pub const SO_TIMESTAMPING = SO_TIMESTAMPING_OLD;
@@ -6031,6 +5617,19 @@ pub inline fn IP_MSFILTER_SIZE(numsrc: anytype) @TypeOf((@import("std").zig.c_tr
 pub inline fn GROUP_FILTER_SIZE(numsrc: anytype) @TypeOf((@import("std").zig.c_translation.sizeof(struct_group_filter) - @import("std").zig.c_translation.sizeof(struct_sockaddr_storage)) + (numsrc * @import("std").zig.c_translation.sizeof(struct_sockaddr_storage))) {
     return (@import("std").zig.c_translation.sizeof(struct_group_filter) - @import("std").zig.c_translation.sizeof(struct_sockaddr_storage)) + (numsrc * @import("std").zig.c_translation.sizeof(struct_sockaddr_storage));
 }
+pub const _BYTESWAP_H = @as(c_int, 1);
+pub inline fn bswap_16(x: anytype) @TypeOf(__bswap_16(x)) {
+    return __bswap_16(x);
+}
+pub inline fn bswap_32(x: anytype) @TypeOf(__bswap_32(x)) {
+    return __bswap_32(x);
+}
+pub inline fn bswap_64(x: anytype) @TypeOf(__bswap_64(x)) {
+    return __bswap_64(x);
+}
+pub inline fn htole(x: anytype) @TypeOf(__bswap_32(htonl(x))) {
+    return __bswap_32(htonl(x));
+}
 pub const NOTCURSES_NCKEYS = "";
 pub inline fn suppuabize(w: anytype) @TypeOf(w + @import("std").zig.c_translation.promoteIntLiteral(c_int, 0x100000, .hexadecimal)) {
     return w + @import("std").zig.c_translation.promoteIntLiteral(c_int, 0x100000, .hexadecimal);
@@ -6124,6 +5723,37 @@ pub const NCKEY_COPY = suppuabize(@as(c_int, 132));
 pub const NCKEY_EXIT = suppuabize(@as(c_int, 133));
 pub const NCKEY_PRINT = suppuabize(@as(c_int, 134));
 pub const NCKEY_REFRESH = suppuabize(@as(c_int, 135));
+pub const NCKEY_CAPS_LOCK = suppuabize(@as(c_int, 150));
+pub const NCKEY_SCROLL_LOCK = suppuabize(@as(c_int, 151));
+pub const NCKEY_NUM_LOCK = suppuabize(@as(c_int, 152));
+pub const NCKEY_PRINT_SCREEN = suppuabize(@as(c_int, 153));
+pub const NCKEY_PAUSE = suppuabize(@as(c_int, 154));
+pub const NCKEY_MENU = suppuabize(@as(c_int, 155));
+pub const NCKEY_MEDIA_PLAY = suppuabize(@as(c_int, 158));
+pub const NCKEY_MEDIA_PAUSE = suppuabize(@as(c_int, 159));
+pub const NCKEY_MEDIA_PPAUSE = suppuabize(@as(c_int, 160));
+pub const NCKEY_MEDIA_REV = suppuabize(@as(c_int, 161));
+pub const NCKEY_MEDIA_STOP = suppuabize(@as(c_int, 162));
+pub const NCKEY_MEDIA_FF = suppuabize(@as(c_int, 163));
+pub const NCKEY_MEDIA_REWIND = suppuabize(@as(c_int, 164));
+pub const NCKEY_MEDIA_NEXT = suppuabize(@as(c_int, 165));
+pub const NCKEY_MEDIA_PREV = suppuabize(@as(c_int, 166));
+pub const NCKEY_MEDIA_RECORD = suppuabize(@as(c_int, 167));
+pub const NCKEY_MEDIA_LVOL = suppuabize(@as(c_int, 168));
+pub const NCKEY_MEDIA_RVOL = suppuabize(@as(c_int, 169));
+pub const NCKEY_MEDIA_MUTE = suppuabize(@as(c_int, 170));
+pub const NCKEY_LSHIFT = suppuabize(@as(c_int, 171));
+pub const NCKEY_LCTRL = suppuabize(@as(c_int, 172));
+pub const NCKEY_LALT = suppuabize(@as(c_int, 173));
+pub const NCKEY_LSUPER = suppuabize(@as(c_int, 174));
+pub const NCKEY_LHYPER = suppuabize(@as(c_int, 175));
+pub const NCKEY_LMETA = suppuabize(@as(c_int, 176));
+pub const NCKEY_RSHIFT = suppuabize(@as(c_int, 177));
+pub const NCKEY_RCTRL = suppuabize(@as(c_int, 178));
+pub const NCKEY_RALT = suppuabize(@as(c_int, 179));
+pub const NCKEY_RSUPER = suppuabize(@as(c_int, 180));
+pub const NCKEY_RHYPER = suppuabize(@as(c_int, 181));
+pub const NCKEY_RMETA = suppuabize(@as(c_int, 182));
 pub const NCKEY_BUTTON1 = suppuabize(@as(c_int, 201));
 pub const NCKEY_BUTTON2 = suppuabize(@as(c_int, 202));
 pub const NCKEY_BUTTON3 = suppuabize(@as(c_int, 203));
@@ -6135,8 +5765,7 @@ pub const NCKEY_BUTTON8 = suppuabize(@as(c_int, 208));
 pub const NCKEY_BUTTON9 = suppuabize(@as(c_int, 209));
 pub const NCKEY_BUTTON10 = suppuabize(@as(c_int, 210));
 pub const NCKEY_BUTTON11 = suppuabize(@as(c_int, 211));
-pub const NCKEY_RELEASE = suppuabize(@as(c_int, 212));
-pub const NCKEY_CURSOR_LOCATION_REPORT = suppuabize(@as(c_int, 213));
+pub const NCKEY_EOF = suppuabize(@as(c_int, 300));
 pub const NCKEY_SCROLL_UP = NCKEY_BUTTON4;
 pub const NCKEY_SCROLL_DOWN = NCKEY_BUTTON5;
 pub const NCKEY_RETURN = NCKEY_ENTER;
@@ -6204,11 +5833,11 @@ pub const NC_BG_PALETTE = @as(c_ulonglong, 0x0000000008000000);
 pub const NC_FG_PALETTE = NC_BG_PALETTE << @as(c_uint, 32);
 pub const NC_BG_ALPHA_MASK = @as(c_ulonglong, 0x30000000);
 pub const NC_FG_ALPHA_MASK = NC_BG_ALPHA_MASK << @as(c_uint, 32);
-pub inline fn NCCHANNELS_INITIALIZER(fr: anytype, fg: anytype, fb: anytype, br: anytype, bg: anytype, bb: anytype) @TypeOf(((((((@import("std").zig.c_translation.cast(u64, fr) << @as(c_uint, 16)) + (@import("std").zig.c_translation.cast(u64, fg) << @as(c_uint, 8))) + @import("std").zig.c_translation.cast(u64, fb)) << @as(c_ulonglong, 32)) + (((br << @as(c_uint, 16)) + (bg << @as(c_uint, 8))) + bb)) + NC_BGDEFAULT_MASK) + NC_FGDEFAULT_MASK) {
-    return ((((((@import("std").zig.c_translation.cast(u64, fr) << @as(c_uint, 16)) + (@import("std").zig.c_translation.cast(u64, fg) << @as(c_uint, 8))) + @import("std").zig.c_translation.cast(u64, fb)) << @as(c_ulonglong, 32)) + (((br << @as(c_uint, 16)) + (bg << @as(c_uint, 8))) + bb)) + NC_BGDEFAULT_MASK) + NC_FGDEFAULT_MASK;
-}
 pub inline fn NCCHANNEL_INITIALIZER(r: anytype, g: anytype, b: anytype) @TypeOf((((@import("std").zig.c_translation.cast(u32, r) << @as(c_uint, 16)) + (@import("std").zig.c_translation.cast(u32, g) << @as(c_uint, 8))) + b) + NC_BGDEFAULT_MASK) {
     return (((@import("std").zig.c_translation.cast(u32, r) << @as(c_uint, 16)) + (@import("std").zig.c_translation.cast(u32, g) << @as(c_uint, 8))) + b) + NC_BGDEFAULT_MASK;
+}
+pub inline fn NCCHANNELS_INITIALIZER(fr: anytype, fg: anytype, fb: anytype, br: anytype, bg: anytype, bb: anytype) @TypeOf((NCCHANNEL_INITIALIZER(fr, fg, fb) << @as(c_ulonglong, 32)) + NCCHANNEL_INITIALIZER(br, bg, bb)) {
+    return (NCCHANNEL_INITIALIZER(fr, fg, fb) << @as(c_ulonglong, 32)) + NCCHANNEL_INITIALIZER(br, bg, bb);
 }
 pub const NCSTYLE_MASK = @as(c_uint, 0xffff);
 pub const NCSTYLE_ITALIC = @as(c_uint, 0x0010);
@@ -6225,10 +5854,12 @@ pub const NCOPTION_PRESERVE_CURSOR = @as(c_ulonglong, 0x0010);
 pub const NCOPTION_SUPPRESS_BANNERS = @as(c_ulonglong, 0x0020);
 pub const NCOPTION_NO_ALTERNATE_SCREEN = @as(c_ulonglong, 0x0040);
 pub const NCOPTION_NO_FONT_CHANGES = @as(c_ulonglong, 0x0080);
+pub const NCOPTION_DRAIN_INPUT = @as(c_ulonglong, 0x0100);
 pub const NCPLANE_OPTION_HORALIGNED = @as(c_ulonglong, 0x0001);
 pub const NCPLANE_OPTION_VERALIGNED = @as(c_ulonglong, 0x0002);
 pub const NCPLANE_OPTION_MARGINALIZED = @as(c_ulonglong, 0x0004);
-pub const WCHAR_MAX_UTF8BYTES = @as(c_int, 6);
+pub const NCPLANE_OPTION_FIXED = @as(c_ulonglong, 0x0008);
+pub const WCHAR_MAX_UTF8BYTES = @as(c_int, 4);
 pub const NCBOXMASK_TOP = @as(c_int, 0x0001);
 pub const NCBOXMASK_RIGHT = @as(c_int, 0x0002);
 pub const NCBOXMASK_BOTTOM = @as(c_int, 0x0004);
@@ -6283,16 +5914,6 @@ pub const NCREADER_OPTION_HORSCROLL = @as(c_ulonglong, 0x0001);
 pub const NCREADER_OPTION_VERSCROLL = @as(c_ulonglong, 0x0002);
 pub const NCREADER_OPTION_NOCMDKEYS = @as(c_ulonglong, 0x0004);
 pub const NCREADER_OPTION_CURSOR = @as(c_ulonglong, 0x0008);
-pub const CELL_ALPHA_HIGHCONTRAST = NCALPHA_HIGHCONTRAST;
-pub const CELL_ALPHA_TRANSPARENT = NCALPHA_TRANSPARENT;
-pub const CELL_ALPHA_BLEND = NCALPHA_BLEND;
-pub const CELL_ALPHA_OPAQUE = NCALPHA_OPAQUE;
-pub const NCSTYLE_PROTECT = @as(c_int, 0);
-pub const NCSTYLE_STANDOUT = @as(c_int, 0);
-pub const NCSTYLE_REVERSE = @as(c_int, 0);
-pub const NCSTYLE_INVIS = @as(c_int, 0);
-pub const NCSTYLE_DIM = @as(c_int, 0);
-pub const NCSTYLE_BLINK = @as(c_int, 0);
 pub const tm = struct_tm;
 pub const timespec = struct_timespec;
 pub const itimerspec = struct_itimerspec;
@@ -6365,6 +5986,7 @@ pub const nctablet = struct_nctablet;
 pub const ncreel = struct_ncreel;
 pub const nctab = struct_nctab;
 pub const nctabbed = struct_nctabbed;
+pub const ncdirect = struct_ncdirect;
 pub const ncvisual_options = struct_ncvisual_options;
 pub const ncselector_item = struct_ncselector_item;
 pub const ncmselector_item = struct_ncmselector_item;

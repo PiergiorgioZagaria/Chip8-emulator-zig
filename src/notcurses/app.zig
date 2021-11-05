@@ -3,31 +3,27 @@ const nc = @import("wrapper.zig");
 const SDL = @import("sdl2"); // TODO use this one for complete project
 // const SDL = @import("sdl/wrapper/sdl.zig");
 pub const App = struct {
-    nc_h: nc.nc_handle,
-    nstd: nc.nc_plane,
-    dimx: i32,
-    dimy: i32,
-    pixels: []u32,
-    quit: bool,
+    var nc_h: nc.handle = undefined;
+    var nstd: nc.plane = undefined;
+    var ninput: nc.input = undefined;
+    var dimx: i32 = undefined;
+    var dimy: i32 = undefined;
+    var pixels: []u32 = undefined;
+    var quit: bool = false;
 
     // Audio
-    audio_device: SDL.c.SDL_AudioDeviceID = undefined,
-    audio_sample_count: usize = 0,
-    audio_buf: []f32 = undefined,
+    var audio_device: SDL.c.SDL_AudioDeviceID = undefined;
+    var audio_sample_count: usize = undefined;
+    var audio_buf: []f32 = undefined;
 
-    keys: [16]bool = [_]bool{false} ** 16,
+    var keys: [16]bool = [_]bool{false} ** 16;
 
-    allocator: *std.mem.Allocator,
-
-    pub fn new(pixels: []u32, allocator: *std.mem.Allocator) !App {
+    pub fn new(pixels_array: []u32, allocator: *std.mem.Allocator) !void {
         // SDL input
         try SDL.init(.{
             .audio = true,
         });
         // Audio
-        var audio_device: SDL.c.SDL_AudioDeviceID = undefined;
-        var audio_sample_count: usize = undefined;
-        var audio_buf: []f32 = undefined;
         if (SDL.c.SDL_GetNumAudioDevices(0) <= 0) {
             audio_device = 0;
         } else {
@@ -54,52 +50,68 @@ pub const App = struct {
             audio_buf = try allocator.alloc(f32, audio_sample_count * 4);
             SDL.c.SDL_PauseAudioDevice(device, 0);
         }
-        var dimy: i32 = undefined;
-        var dimx: i32 = undefined;
-        var nc_h = try nc.nc_handle.init();
+        pixels = pixels_array;
+        nc_h = try nc.handle.init();
+        nstd = try nc_h.stddim_yx(&dimy, &dimx);
+        ninput = nc.input.new();
+    }
+    pub fn forceQuit() void {
+        quit = true;
+    }
+    pub fn input() void {
+        while (ninput.getc_nblock(nc_h) != 0) {
+            switch (ninput.ni.id) {
+                27 => quit = true,
 
-        var nstd = try nc_h.stddim_yx(&dimy, &dimx);
+                '1' => keys[1] = ninput.ni.evtype != 3,
+                '2' => keys[2] = ninput.ni.evtype != 3,
+                '3' => keys[3] = ninput.ni.evtype != 3,
+                '4' => keys[0xc] = ninput.ni.evtype != 3,
 
-        return App{
-            .nc_h = nc_h,
-            .dimx = dimx,
-            .dimy = dimy,
-            .nstd = nstd,
-            .pixels = pixels,
-            .quit = false,
-            .audio_device = audio_device,
-            .audio_sample_count = audio_sample_count,
-            .audio_buf = audio_buf,
-            .allocator = allocator,
-        };
+                'q' => keys[4] = ninput.ni.evtype != 3,
+                'w' => keys[5] = ninput.ni.evtype != 3,
+                'e' => keys[6] = ninput.ni.evtype != 3,
+                'r' => keys[0xd] = ninput.ni.evtype != 3,
+
+                'a' => keys[7] = ninput.ni.evtype != 3,
+                's' => keys[8] = ninput.ni.evtype != 3,
+                'd' => keys[9] = ninput.ni.evtype != 3,
+                'f' => keys[0xe] = ninput.ni.evtype != 3,
+
+                'z' => keys[0xa] = ninput.ni.evtype != 3,
+                'x' => keys[0] = ninput.ni.evtype != 3,
+                'c' => keys[0xb] = ninput.ni.evtype != 3,
+                'v' => keys[0xf] = ninput.ni.evtype != 3,
+                else => {},
+            }
+        }
     }
-    pub fn quit_func(self: *App) void {
-        self.quit = true;
-    }
-    pub fn input(self: *App) void {
-        _ = self;
-    }
-    pub fn render(self: *App) !void {
-        self.nstd.erase();
-        var visual = try nc.nc_visual.from_rgba(@ptrCast([*]const u8, self.pixels.ptr), 32, 256, 64);
+    pub fn render() !void {
+        nstd.erase();
+        var visual = try nc.visual.from_rgba(@ptrCast([*]const u8, pixels.ptr), 32, 256, 64);
         defer visual.destroy();
-        var tmp = try visual.visual_render(self.nc_h, nc.Blitter.pixel, nc.Scale.none_hires);
+        var tmp = try visual.visual_render(nc_h, nc.Blitter.default, nc.Scale.none);
         defer tmp.destroy() catch unreachable;
-        try self.nc_h.render();
+        try nc_h.render();
     }
-    pub fn stop(self: *App) !void {
-        try self.nc_h.stop();
+    pub fn stop() !void {
+        try nc_h.stop();
         SDL.quit();
-        self.* = undefined;
     }
-    /// Il volume deve essere nell'intorno [1 , 0]
-    pub fn beep(self: *App, volume: f32) void {
-        if (self.audio_device == 0) {
+    /// Volume must be within [1 , 0]
+    pub fn beep(volume: f32) void {
+        if (audio_device == 0) {
             return;
         }
-        for (self.audio_buf) |*b| {
+        for (audio_buf) |*b| {
             b.* = volume;
         }
-        _ = SDL.c.SDL_QueueAudio(self.audio_device, @ptrCast(*const c_void, self.audio_buf), @intCast(u32, self.audio_buf.len));
+        _ = SDL.c.SDL_QueueAudio(audio_device, @ptrCast(*const c_void, audio_buf), @intCast(u32, audio_buf.len));
+    }
+    pub fn shouldQuit() bool {
+        return quit;
+    }
+    pub fn getKeys() []bool {
+        return keys[0..];
     }
 };
