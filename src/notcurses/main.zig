@@ -1,6 +1,6 @@
 const std = @import("std");
 const nc = @import("wrapper.zig");
-const Chip = @import("chip.zig").Chip;
+const Chip = @import("emu").Chip;
 const App = @import("app.zig").App;
 const SDL = @import("sdl2");
 // const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion

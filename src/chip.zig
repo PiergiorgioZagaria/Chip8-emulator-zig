@@ -23,7 +23,7 @@ pub const Chip = struct {
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80, // F
-        0x00, // For format
+        0x00, // For autoformat
     } ++ [_]u8{0} ** 3935, // 4kB Ram memory
     // The first CHIP-8 interpreter (on the COSMAC VIP computer) was also located in RAM, from address 000 to 1FF. It would expect a CHIP-8 program to be loaded into memory after it, starting at address 200 (512 in decimal). Although modern interpreters are not in the same memory space, you should do the same to be able to run the old programs; you can just leave the initial space empty, except for the font.
     display: [2048]u32 = [_]u32{0} ** 2048, // A 64 X 32 pixel monochrome display
@@ -68,13 +68,6 @@ pub const Chip = struct {
         var opcode: u16 = @as(u16, self.memory[self.pc]) << 8 | self.memory[self.pc + 1];
         // std.debug.print("executing: {x}\n", .{opcode});
         self.pc += 2;
-
-        if (self.delay_timer > 0) {
-            self.delay_timer -= 1;
-        }
-        if (self.sound_timer > 0) {
-            self.sound_timer -= 1;
-        }
 
         switch (opcode >> 8 & 0xf0) {
             0x00 => {

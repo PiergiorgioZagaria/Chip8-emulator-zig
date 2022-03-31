@@ -100,6 +100,8 @@ pub const input = struct {
             .shift = false,
             .ctrl = false,
             .evtype = 0,
+            .ypx = 0,
+            .xpx = 0,
         } };
     }
     pub fn getc_nblock(self: *input, nc: handle) u32 {

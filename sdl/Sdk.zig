@@ -255,6 +255,18 @@ pub fn link(sdk: *Sdk, exe: *LibExeObjStep, linkage: std.build.LibExeObjStep.Lin
         // on MacOS, we require a brew install
         // requires sdl2 and sdl2_image to be installed via brew
         exe.linkSystemLibrary("sdl2");
+
+        exe.linkFramework("IOKit");
+        exe.linkFramework("Cocoa");
+        exe.linkFramework("CoreAudio");
+        exe.linkFramework("Carbon");
+        exe.linkFramework("Metal");
+        exe.linkFramework("QuartzCore");
+        exe.linkFramework("AudioToolbox");
+        exe.linkFramework("ForceFeedback");
+        exe.linkFramework("GameController");
+        exe.linkFramework("CoreHaptics");
+        exe.linkSystemLibrary("iconv");
     } else {
         // on all other platforms, just try the system way:
         exe.linkSystemLibrary("sdl2");
@@ -368,7 +380,7 @@ const PrepareStubSourceStep = struct {
     }
 };
 
-fn tripleName(allocator: *std.mem.Allocator, target_local: std.Target) ![]u8 {
+fn tripleName(allocator: std.mem.Allocator, target_local: std.Target) ![]u8 {
     const arch_name = @tagName(target_local.cpu.arch);
     const os_name = @tagName(target_local.os.tag);
     const abi_name = @tagName(target_local.abi);
