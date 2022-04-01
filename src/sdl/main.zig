@@ -35,12 +35,6 @@ fn parseArguments() !Chip {
         \\
     );
 
-    //[_]clap.Param(clap.Help){
-    //     clap.parseParam("-h, --help             Display this help and exit.              ") catch unreachable,
-    //     clap.parseParam("-f, --file <STR>       Run the rom on the emulator.") catch unreachable,
-    //     clap.parseParam("<POS>") catch unreachable,
-    // };
-
     // Initalize our diagnostics, which can be used for reporting useful errors.
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
@@ -62,8 +56,6 @@ fn parseArguments() !Chip {
             std.log.err("Caught {} during initialization.\n", .{err});
             try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
             return err;
-            // std.process.exit(1);
-            // return undefined;
         };
     }
     if (res.positionals.len == 1) {
@@ -72,8 +64,6 @@ fn parseArguments() !Chip {
                 std.log.err("Caught {} during initialization.\n", .{err});
                 try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
                 return err;
-                // std.process.exit(1);
-                // return undefined;
             };
         }
     }
@@ -92,79 +82,95 @@ fn runChip(chip: *Chip) !void {
     var render_tick: usize = 0;
     var timer_tick: usize = SDL.getTicks();
 
-    var texture: SDL.Texture = try SDL.createTexture(App.renderer, SDL.Texture.Format.abgr8888, SDL.Texture.Access.streaming, 64, 32);
-    const src_rect = SDL.Rectangle{
-        .x = 0,
-        .y = 0,
-        .width = 64,
-        .height = 32,
+    var fg_color = [3]f32{
+        @intToFloat(f32, FG_COLOR & 0xff) / 255, // r
+        @intToFloat(f32, (FG_COLOR >> 8) & 0xff) / 255, // g
+        @intToFloat(f32, (FG_COLOR >> 16) & 0xff) / 255, // b
     };
-    const dst_rect = SDL.Rectangle{
-        .x = 0,
-        .y = 0,
-        .width = 640,
-        .height = 320,
+    var bg_color = [3]f32{
+        @intToFloat(f32, BG_COLOR & 0xff) / 255, // r
+        @intToFloat(f32, (BG_COLOR >> 8) & 0xff) / 255, // g
+        @intToFloat(f32, (BG_COLOR >> 16) & 0xff) / 255, // b
     };
 
+    try App.initTexture();
     while (!App.should_quit()) {
-        if (App.debug) {
-            App.window_debug_mode();
-            std.log.info("You entered debug mode\n", .{});
-            while (!App.change_mode) {
-                App.handleInput();
-                if (App.step) {
-                    App.step = false;
+        switch (App.status) {
+            .debug => {
+                App.window_debug_mode();
+                std.log.info("You entered debug mode\n", .{});
+                while (!App.change_mode) {
+                    App.handleInput();
+                    if (!App.step_mode or App.step) {
+                        if (SDL.getTicks() - timer_tick >= 16) {
+                            timer_tick = SDL.getTicks();
+                            if (chip.delay_timer > 0) {
+                                chip.delay_timer -= 1;
+                            }
+
+                            if (chip.sound_timer > 0) {
+                                chip.sound_timer -= 1;
+                            }
+                        }
+                        App.step = false;
+                        chip.cycle() catch |err| {
+                            std.log.err("Caught {} during chip execution\n", .{err});
+                            App.quit_func();
+                        };
+                    }
+
+                    SDL.delay(1);
+                    if (SDL.getTicks() - render_tick >= 16) {
+                        if (chip.sound_timer > 0) {
+                            App.beep(1);
+                        }
+                        try App.showEmu(chip.display[0..]);
+                        var updated_colors = false;
+                        try App.showGui(&fg_color, &bg_color, &updated_colors);
+                        if (updated_colors) {
+                            chip.fg_color = (0xff << 24) | (@floatToInt(u32, fg_color[2] * 255) << 16) | (@floatToInt(u32, fg_color[1] * 255) << 8) | (@floatToInt(u32, fg_color[0] * 255));
+                            chip.bg_color = (0xff << 24) | (@floatToInt(u32, bg_color[2] * 255) << 16) | (@floatToInt(u32, bg_color[1] * 255) << 8) | (@floatToInt(u32, bg_color[0] * 255));
+                            chip.updateColors();
+                        }
+
+                        App.renderer.present();
+                        render_tick = SDL.getTicks();
+                    }
+                }
+            },
+            .normal => {
+                App.window_normal_mode();
+                std.log.info("You are in normal mode\n", .{});
+                while (!App.change_mode) {
+                    if (SDL.getTicks() - timer_tick >= 16) {
+                        timer_tick = SDL.getTicks();
+                        if (chip.delay_timer > 0) {
+                            chip.delay_timer -= 1;
+                        }
+
+                        if (chip.sound_timer > 0) {
+                            chip.sound_timer -= 1;
+                        }
+                    }
+
+                    App.handleInput();
                     chip.cycle() catch |err| {
                         std.log.err("Caught {} during chip execution\n", .{err});
                         App.quit_func();
                     };
-                }
-                try App.renderer.setColorRGB(0, 0, 0);
-                try App.renderer.clear();
+                    SDL.delay(1);
 
-                try texture.update(std.mem.sliceAsBytes(chip.display[0..]), 64 * 4, null);
-                try App.renderer.copy(texture, dst_rect, src_rect);
+                    if (SDL.getTicks() - render_tick >= 16) {
+                        if (chip.sound_timer > 0) {
+                            App.beep(1);
+                        }
+                        try App.showEmu(chip.display[0..]);
 
-                try App.showGui();
-                App.renderer.present();
-                SDL.delay(1);
-            }
-        } else {
-            App.window_normal_mode();
-            std.log.info("You are in standard mode\n", .{});
-            while (!App.change_mode) {
-                if (SDL.getTicks() - timer_tick >= 16) {
-                    timer_tick = SDL.getTicks();
-                    if (chip.delay_timer > 0) {
-                        chip.delay_timer -= 1;
-                    }
-
-                    if (chip.sound_timer > 0) {
-                        chip.sound_timer -= 1;
+                        App.renderer.present();
+                        render_tick = SDL.getTicks();
                     }
                 }
-
-                App.handleInput();
-                chip.cycle() catch |err| {
-                    std.log.err("Caught {} during chip execution\n", .{err});
-                    App.quit_func();
-                };
-                SDL.delay(1);
-
-                if (SDL.getTicks() - render_tick >= 16) {
-                    if (chip.sound_timer > 0) {
-                        App.beep(1);
-                    }
-                    try App.renderer.setColorRGB(0, 0, 0);
-                    try App.renderer.clear();
-
-                    try texture.update(std.mem.sliceAsBytes(chip.display[0..]), 64 * 4, null);
-                    try App.renderer.copy(texture, dst_rect, src_rect);
-
-                    App.renderer.present();
-                    render_tick = SDL.getTicks();
-                }
-            }
+            },
         }
         App.change_mode = false;
     }

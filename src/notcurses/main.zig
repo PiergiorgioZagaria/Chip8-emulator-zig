@@ -4,20 +4,19 @@ const Chip = @import("emu").Chip;
 const App = @import("app.zig").App;
 const SDL = @import("sdl2");
 // const SDL = @import("sdl/wrapper/sdl.zig"); // use this for autocompletion
-const clap = @import("clap.zig");
-var page_allocator = std.heap.page_allocator;
+const clap = @import("clap");
 
 //                 a b g r
 const FG_COLOR = 0xff00ff00;
 const BG_COLOR = 0xff000000;
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(page_allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
     var chip = try parseArguments();
 
-    try App.new(&chip.display, &arena.allocator);
+    try App.new(&chip.display, arena.allocator());
     defer App.stop() catch unreachable;
 
     chip.set_chip_keys(App.getKeys());
@@ -31,54 +30,46 @@ pub fn main() anyerror!void {
 fn parseArguments() !Chip {
     // First we specify what parameters our program can take.
     // We can use `parseParam` to parse a string to a `Param(Help)`
-    const params = comptime [_]clap.Param(clap.Help){
-        clap.parseParam("-h, --help             Display this help and exit.              ") catch unreachable,
-        clap.parseParam("-f, --file <STR>       Run the rom on the emulator.") catch unreachable,
-        clap.parseParam("<POS>") catch unreachable,
-    };
+    const params = comptime clap.parseParamsComptime(
+        \\-h, --help             Display this help and exit.
+        \\-f, --file <str>       Run the rom on the emulator.
+        \\<str>...
+        \\
+    );
 
     // Initalize our diagnostics, which can be used for reporting useful errors.
     var diag = clap.Diagnostic{};
-    var args = clap.parse(clap.Help, &params, .{ .diagnostic = &diag }) catch |err| {
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+        .diagnostic = &diag,
+    }) catch |err| {
         // Report useful error and exit
         diag.report(std.io.getStdErr().writer(), err) catch {};
         return err;
     };
-    defer args.deinit();
+    defer res.deinit();
 
-    if (args.flag("--help")) {
-        try clap.help(std.io.getStdErr().writer(), &params);
+    if (res.args.help) {
+        try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
         std.process.exit(0);
         return undefined;
-    } else if (args.option("--file")) |f| {
+    }
+    if (res.args.file) |f| {
         return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
             std.log.err("Caught {} during initialization.\n", .{err});
-            try clap.help(std.io.getStdErr().writer(), &params);
-            std.process.exit(1);
-            return undefined;
+            try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
+            return err;
         };
-    } else if (args.positionals().len == 1) {
-        for (args.positionals()) |f| {
+    }
+    if (res.positionals.len == 1) {
+        for (res.positionals) |f| {
             return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
                 std.log.err("Caught {} during initialization.\n", .{err});
-                try clap.help(std.io.getStdErr().writer(), &params);
-                std.process.exit(1);
-                return undefined;
+                try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
+                return err;
             };
         }
-    } else {
-        return try Chip.init("roms/IBM Logo.ch8", FG_COLOR, BG_COLOR);
-        // var chip: Chip = try Chip.init("roms/test_opcode.ch8");
-        // var chip: Chip = try Chip.init("roms/BC_test.ch8");
-        // var chip: Chip = try Chip.init("roms/PONG");
-        // var chip: Chip = try Chip.init("roms/CAVE");
-        // var chip: Chip = try Chip.init("roms/Maze");
-        // var chip: Chip = try Chip.init("roms/TANK");
-        // var chip: Chip = try Chip.init("roms/TETRIS");
-        // var chip: Chip = try Chip.init("roms/test.ch8");
-
     }
-    return undefined;
+    return try Chip.init("roms/IBM Logo.ch8", FG_COLOR, BG_COLOR);
 }
 
 fn runChip(chip: *Chip) !void {

@@ -1,7 +1,7 @@
 const std = @import("std");
 const nc = @import("wrapper.zig");
 const SDL = @import("sdl2"); // TODO use this one for complete project
-// const SDL = @import("sdl/wrapper/sdl.zig");
+
 pub const App = struct {
     var nc_h: nc.handle = undefined;
     var nstd: nc.plane = undefined;
@@ -12,43 +12,46 @@ pub const App = struct {
     var quit: bool = false;
 
     // Audio
-    var audio_device: SDL.c.SDL_AudioDeviceID = undefined;
+    // var audio_device: SDL.c.SDL_AudioDeviceID = undefined;
+    var audio_device: ?SDL.AudioDevice = null;
     var audio_sample_count: usize = undefined;
     var audio_buf: []f32 = undefined;
 
     var keys: [16]bool = [_]bool{false} ** 16;
 
-    pub fn new(pixels_array: []u32, allocator: *std.mem.Allocator) !void {
+    pub fn new(pixels_array: []u32, allocator: std.mem.Allocator) !void {
         // SDL input
         try SDL.init(.{
             .audio = true,
         });
         // Audio
-        if (SDL.c.SDL_GetNumAudioDevices(0) <= 0) {
-            audio_device = 0;
-        } else {
-            var want = SDL.c.SDL_AudioSpec{
-                .freq = 64 * 60,
-                .format = SDL.c.AUDIO_F32,
-                .channels = 1,
-                .samples = 64,
-                .silence = undefined,
-                .padding = undefined,
-                .size = undefined,
-                .callback = undefined,
-                .userdata = undefined,
-            };
-
-            var have: SDL.c.SDL_AudioSpec = undefined;
-            var device = SDL.c.SDL_OpenAudioDevice(null, 0, &want, &have, SDL.c.SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-            if (device == 0) {
-                std.log.err("Caught SDL error, {s}.\n", .{SDL.getError()});
-                return SDL.Error.SdlError;
-            }
-            audio_device = device;
-            audio_sample_count = have.samples * have.channels;
+        if (SDL.openAudioDevice(.{
+            .desired_spec = .{
+                .sample_rate = 64 * 60,
+                .buffer_format = SDL.AudioFormat.@"f32",
+                .channel_count = 1,
+                .buffer_size_in_frames = 64,
+                .callback = null,
+                // .callback = (struct {
+                //     fn call(userdata: ?*anyopaque, buf: [*c]u8, size: c_int) callconv(.C) void {
+                //         _ = userdata;
+                //         var i: c_int = 0;
+                //         while (i < size) : (i += 1) {
+                //             buf[@intCast(usize, i)] = 10;
+                //         }
+                //     }
+                // }).call,
+                .userdata = null,
+            },
+            .allowed_changes_from_desired = .{ .buffer_format = true },
+        })) |dev| {
+            audio_device = dev.device;
+            var have = dev.obtained_spec;
+            audio_sample_count = @intCast(usize, have.buffer_size_in_frames * have.channel_count);
             audio_buf = try allocator.alloc(f32, audio_sample_count * 4);
-            SDL.c.SDL_PauseAudioDevice(device, 0);
+            dev.device.pause(false);
+        } else |err| {
+            std.log.err("Failed to open audio device: {}", .{err});
         }
         pixels = pixels_array;
         nc_h = try nc.handle.init();
@@ -100,13 +103,13 @@ pub const App = struct {
     }
     /// Volume must be within [1 , 0]
     pub fn beep(volume: f32) void {
-        if (audio_device == 0) {
-            return;
+        if (audio_device) |dev| {
+            for (audio_buf) |*b| {
+                b.* = 1;
+                _ = volume;
+            }
+            _ = SDL.c.SDL_QueueAudio(dev.id, @ptrCast(*const anyopaque, audio_buf), @intCast(u32, audio_buf.len));
         }
-        for (audio_buf) |*b| {
-            b.* = volume;
-        }
-        _ = SDL.c.SDL_QueueAudio(audio_device, @ptrCast(*const c_void, audio_buf), @intCast(u32, audio_buf.len));
     }
     pub fn shouldQuit() bool {
         return quit;

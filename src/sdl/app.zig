@@ -25,14 +25,20 @@ pub const App = struct {
     var allocator: std.mem.Allocator = undefined;
 
     var quit: bool = false;
-    pub var debug: bool = false;
-    pub var step: bool = false;
-    pub var change_mode: bool = false;
+    pub var status = State.normal;
+
+    pub var step = false;
+    pub var step_mode = true;
+    pub var change_mode = false;
+    var show_input_header = true;
 
     // Text for debugging
     var font_file: []u8 = "/home/Zargio/.local/share/fonts/Hack Regular Nerd Font Complete.ttf";
     /// The Chip-8 inputs, the layout is described in chip.zig
     pub var keys: [16]bool = [_]bool{false} ** 16;
+    var texture: SDL.Texture = undefined;
+    var button_texture_active: SDL.Texture = undefined;
+    var button_texture_inactive: SDL.Texture = undefined;
 
     /// Init the engine with defaults
     pub fn initSDLdefault(_allocator: std.mem.Allocator) !void {
@@ -56,7 +62,7 @@ pub const App = struct {
 
         // Initialize imgui
         context = c.igCreateContext(null);
-        theme.setImguiThemeSolarized(&c.igGetStyle().*.Colors);
+        // theme.setImguiThemeSolarized(&c.igGetStyle().*.Colors);
         theme.setImguiThemeCyberpunk(&c.igGetStyle().*.Colors);
         // c.igStyleColorsDark(null);
         io = c.igGetIO();
@@ -68,11 +74,15 @@ pub const App = struct {
         // _ = c.ImFontAtlas_Build(io.Fonts);
         io.DisplaySize = .{ .x = @intToFloat(f32, window_width), .y = @intToFloat(f32, window_height) };
         io.DeltaTime = 1.0 / 60.0;
+        // io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
         if (!c.ImGui_ImplSDL2_InitForSDLRenderer(@ptrCast(*c.SDL_Window, window.ptr), @ptrCast(*c.SDL_Renderer, renderer.ptr)))
             std.debug.panic("", .{});
         if (!c.ImGui_ImplSDLRenderer_Init(@ptrCast(*c.SDL_Renderer, renderer.ptr)))
             std.debug.panic("", .{});
-
+        button_texture_active = try SDL.createTexture(renderer, .abgr8888, .static, 2, 2);
+        button_texture_inactive = try SDL.createTexture(renderer, .abgr8888, .static, 2, 2);
+        try button_texture_active.update(std.mem.sliceAsBytes(&[_]u32{ 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff }), 2 * 4, null);
+        try button_texture_inactive.update(std.mem.sliceAsBytes(&[_]u32{ 0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000 }), 2 * 4, null);
         if (SDL.openAudioDevice(.{
             .desired_spec = .{
                 .sample_rate = 64 * 60,
@@ -145,12 +155,15 @@ pub const App = struct {
                             .v => keys[0xf] = true,
 
                             .space => {
-                                debug = !debug;
+                                switch (status) {
+                                    .normal => status = .debug,
+                                    .debug => status = .normal,
+                                }
                                 change_mode = true;
                             },
                             .tab => step = true,
 
-                            else => std.debug.print("key pressed: {}\n", .{key.scancode}),
+                            else => {},
                         }
                     }
                 },
@@ -185,42 +198,51 @@ pub const App = struct {
         }
     }
 
-    pub fn showGui() !void {
+    pub fn showGui(fg_color: *[3]f32, bg_color: *[3]f32, updated_colors: *bool) !void {
         c.ImGui_ImplSDLRenderer_NewFrame();
         c.ImGui_ImplSDL2_NewFrame();
         c.igNewFrame();
 
-        // if (show_demo_window)
-        c.igShowDemoWindow(null);
-        _ = c.igBegin("Hello, world!", null, 0);
-        c.igText("This is some useful text");
-        // _ = c.igCheckbox("Demo window", &show_demo_window);
-        // _ = c.igCheckbox("Another window", &show_another_window);
-
-        // c.igSliderFloat("Float", &f, 0.0f, 1.0f, "%.3f", 0);
-        // c.igColorEdit3("clear color", (float *)&clearColor, 0);
-
-        var button_size = c.ImVec2{ .x = 0, .y = 0 };
+        _ = c.igBegin("Emu console", null, c.ImGuiWindowFlags_AlwaysVerticalScrollbar);
         {
-            if (c.igButton("Button", button_size))
-                std.debug.print("Count ++", .{});
-            // counter++;
-            c.igSameLine(0, -1);
-            // c.igText("counter = %d", counter);
-
-            c.igText("AAAAAAAA");
-            // c.igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0 / c.igGetIO().Framerate, c.igGetIO().Framerate);
-            c.igEnd();
+            if (c.igCollapsingHeader_TreeNodeFlags("Input", 0)) {
+                const texture_size = c.ImVec2{ .x = 32, .y = 32 };
+                const uv0 = c.ImVec2{ .x = 0, .y = 0 };
+                const uv1 = c.ImVec2{ .x = 1, .y = 1 };
+                const tint_color = c.ImVec4{ .x = 1, .y = 1, .z = 1, .w = 1 };
+                const tex_bg_color = c.ImVec4{ .x = 0, .y = 0, .z = 0, .w = 0 };
+                const indexes = [_]u8{ 1, 2, 3, 0xc, 4, 5, 6, 0xd, 7, 8, 9, 0xe, 0xa, 0, 0xb, 0xf };
+                var i: u8 = undefined;
+                var j: u8 = 0;
+                while (j < 4) : (j += 1) {
+                    i = 0;
+                    while (i < 4) : (i += 1) {
+                        if (keys[indexes[j * 4 + i]]) {
+                            c.igImage(button_texture_active.ptr, texture_size, uv0, uv1, tint_color, tex_bg_color);
+                        } else {
+                            c.igImage(button_texture_inactive.ptr, texture_size, uv0, uv1, tint_color, tex_bg_color);
+                        }
+                        c.igSameLine(0, 2);
+                    }
+                    c.igNewLine();
+                }
+            }
+            if (c.igCollapsingHeader_TreeNodeFlags("Step mode", 0)) {
+                _ = c.igCheckbox("Step mode active", &step_mode);
+                if (c.igButton("Step", .{ .x = 40, .y = 20 }))
+                    step = true;
+            }
+            if (c.igCollapsingHeader_TreeNodeFlags("CPU state", 0)) {
+                updated_colors.* = c.igColorEdit3("FG color", &fg_color[0], 0);
+                updated_colors.* = c.igColorEdit3("BG color", &bg_color[0], 0) or updated_colors.*;
+            }
+            // if (c.igCollapsingHeader_TreeNodeFlags("Memory", 0)) {
+            // }
         }
-
-        // if (show_another_window) {
-        //     _ = c.igBegin("imgui Another Window", &show_another_window, 0);
-        //     c.igText("Hello from imgui");
-        //     if (c.igButton("Close me", button_size)) {
-        //         show_another_window = false;
-        //     }
-        //     c.igEnd();
-        // }
+        c.igEnd();
+        // if (show_demo_window)
+        if (comptime std.debug.runtime_safety)
+            c.igShowDemoWindow(null);
 
         // c.igPopFont();
         c.igRender();
@@ -235,7 +257,31 @@ pub const App = struct {
         return quit;
     }
 
-    /// Il volume deve essere nell'intorno [1 , 0]
+    pub fn initTexture() !void {
+        texture = try SDL.createTexture(renderer, .abgr8888, .streaming, 64, 32);
+    }
+
+    /// You need to call initTexture once before you can call this
+    pub fn showEmu(display: []const u32) !void {
+        const src_rect = SDL.Rectangle{
+            .x = 0,
+            .y = 0,
+            .width = 64,
+            .height = 32,
+        };
+        const dst_rect = SDL.Rectangle{
+            .x = 0,
+            .y = 0,
+            .width = 640,
+            .height = 320,
+        };
+        try renderer.setColorRGB(0, 0, 0);
+        try renderer.clear();
+
+        try texture.update(std.mem.sliceAsBytes(display[0..]), 64 * 4, null);
+        try renderer.copy(texture, dst_rect, src_rect);
+    }
+
     pub fn beep(volume: f32) void {
         if (audio_device) |dev| {
             for (audio_buf) |*b| {
@@ -256,4 +302,9 @@ pub const App = struct {
         window_height = 320;
         SDL.c.SDL_SetWindowSize(window.ptr, @intCast(c_int, window_width), @intCast(c_int, window_height));
     }
+};
+
+const State = enum {
+    debug,
+    normal,
 };

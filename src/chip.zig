@@ -37,12 +37,16 @@ pub const Chip = struct {
     // 1 2 3 4 - Q W E R - A S D F - Z X C V : KEYS
     // 1 2 3 C - 4 5 6 D - 7 8 9 E - A 0 B F : INDEX
     fg_color: u32,
+    fg_color_prev: u32,
     bg_color: u32,
+    bg_color_prev: u32,
 
     pub fn init(file: []const u8, fg_color: u32, bg_color: u32) !Chip {
         var chip = Chip{
             .fg_color = fg_color,
+            .fg_color_prev = fg_color,
             .bg_color = bg_color,
+            .bg_color_prev = bg_color,
         };
         _ = try std.fs.cwd().readFile(file, chip.memory[0x200..]);
         std.mem.set(u32, &chip.display, bg_color);
@@ -280,6 +284,25 @@ pub const Chip = struct {
     fn clear_screen(self: *Chip) void {
         // self.display = [_]u32{0} ** 2048;
         std.mem.set(u32, &self.display, self.bg_color);
+    }
+
+    /// Doesn't update if fg_color == bg_color.
+    /// Not noticeable with dragging, but very noticeable if you manually set the colors
+    pub fn updateColors(self: *Chip) void {
+        if (self.fg_color == self.bg_color) {
+            self.fg_color = self.fg_color_prev;
+            self.bg_color = self.bg_color_prev;
+        } else {
+            for (self.display) |*d| {
+                if (d.* == self.fg_color_prev) {
+                    d.* = self.fg_color;
+                } else {
+                    d.* = self.bg_color;
+                }
+            }
+            self.fg_color_prev = self.fg_color;
+            self.bg_color_prev = self.bg_color;
+        }
     }
 
     fn print_sprite(self: *Chip, opcode: u16) void {

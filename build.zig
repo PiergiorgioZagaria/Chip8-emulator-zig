@@ -37,6 +37,7 @@ pub fn build(b: *Builder) !void {
     const run_emu_step = b.step("run", "Runs the chip-8 emulator");
     run_emu_step.dependOn(&run_emu.step);
 
+    // FIXME update the wrapper to latest notcurses
     // const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
     // emu_nc.setBuildMode(mode);
     // emu_nc.setTarget(target);
@@ -46,7 +47,6 @@ pub fn build(b: *Builder) !void {
     // sdk.link(emu_nc, .dynamic);
     // emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
     // emu_nc.addPackagePath("emu", "src/chip.zig");
-    // emu_nc.addPackage(emu_pkg);
     // emu_nc.addPackagePath("clap", "zig-clap/clap.zig");
     // emu_nc.install();
 
