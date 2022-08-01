@@ -2,7 +2,6 @@ const std = @import("std");
 const mach = @import("mach");
 const gpu = @import("gpu");
 const glfw = @import("glfw");
-const clap = @import("clap");
 const Chip = @import("emu");
 
 //                 a b g r
