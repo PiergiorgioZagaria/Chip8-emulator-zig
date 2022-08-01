@@ -1,6 +1,5 @@
 const std = @import("std");
 pub const c = @cImport(@cInclude("notcurses/notcurses.h"));
-// pub const c = @import("notcurses.zig"); // Used for autocompletion
 
 pub const NcError = error{
     InitError,
@@ -19,33 +18,24 @@ pub const NcError = error{
 pub const handle = struct {
     ptr: *c.notcurses,
 
-    // TODO rework for better nc_opts
     pub fn init() NcError!handle {
-        var ncopts = c.notcurses_options{
-            .termtype = 0,
-            .renderfp = 0,
-            .loglevel = 0,
-            .margin_t = 0,
-            .margin_r = 0,
-            .margin_b = 0,
-            .margin_l = 0,
-            .flags = 0,
-        };
-        var nc = c.notcurses_init(&ncopts, c.stdout);
+        var nc = c.notcurses_init(null, c.stdout);
         if (nc) |v| {
             return handle{ .ptr = v };
         } else {
             return error.InitError;
         }
     }
+
     pub fn stddim_yx(self: handle, y: *i32, x: *i32) NcError!plane {
-        var nstd = c.notcurses_stddim_yx(self.ptr, y, x);
+        var nstd = c.notcurses_stddim_yx(self.ptr, @ptrCast([*]c_uint, y), @ptrCast([*]c_uint, x));
         if (nstd) |v| {
             return plane{ .ptr = v };
         } else {
             return error.InitStdPlaneError;
         }
     }
+
     pub fn stop(self: handle) NcError!void {
         if (c.notcurses_stop(self.ptr) != 0) {
             return error.StopError;
@@ -92,20 +82,10 @@ pub const plane = struct {
 pub const input = struct {
     ni: c.ncinput,
     pub fn new() input {
-        return input{ .ni = c.struct_ncinput{
-            .id = 0,
-            .y = 0,
-            .x = 0,
-            .alt = false,
-            .shift = false,
-            .ctrl = false,
-            .evtype = 0,
-            .ypx = 0,
-            .xpx = 0,
-        } };
+        return input{ .ni = std.mem.zeroes(c.struct_ncinput) };
     }
-    pub fn getc_nblock(self: *input, nc: handle) u32 {
-        return c.notcurses_getc_nblock(nc.ptr, &self.ni);
+    pub fn get_nblock(self: *input, nc: handle) u32 {
+        return c.notcurses_get_nblock(nc.ptr, &self.ni);
     }
 };
 
@@ -137,16 +117,18 @@ pub const visual = struct {
             .ptr = c.ncvisual_from_file(file.ptr) orelse return error.VisualFromFileError,
         };
     }
+
     pub fn from_rgba(rgba: [*]const u8, rows: i32, stride: i32, cols: i32) NcError!visual {
         return visual{
             .ptr = c.ncvisual_from_rgba(rgba, rows, stride, cols) orelse return error.VisualFromRgbaError,
         };
     }
-    pub fn visual_render(self: visual, nc: handle, blit: Blitter, scaling: Scale) NcError!plane {
+
+    pub fn visual_blit(self: visual, nc: handle, blit: Blitter, scaling: Scale) NcError!plane {
         const opts = c.ncvisual_options{
             .scaling = @enumToInt(scaling),
             .blitter = @enumToInt(blit),
-            .n = null,
+            .n = c.notcurses_stdplane(nc.ptr),
             .y = 0,
             .x = 0,
             .begy = 0,
@@ -159,9 +141,10 @@ pub const visual = struct {
             .pxoffx = 0,
         };
         return plane{
-            .ptr = c.ncvisual_render(nc.ptr, self.ptr, &opts) orelse return error.VisualRenderError,
+            .ptr = c.ncvisual_blit(nc.ptr, self.ptr, &opts) orelse return error.VisualRenderError,
         };
     }
+
     pub fn destroy(self: visual) void {
         c.ncvisual_destroy(self.ptr);
     }

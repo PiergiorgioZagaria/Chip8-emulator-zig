@@ -4,12 +4,11 @@ The sound may not be well implemented, I ported it from another emulator
 Tested with zig version 0.10.0-dev.3383+3cf8f283d
 
 ## Usage
-Build and run with `zig build run-[sdl/mach] -- "<Path to ROM>"`
+Build and run with `zig build run-[sdl/mach/nc] -- "<Path to ROM>"`
 
 ## TODOS
-- [ ] Rewrite notcurses api
 - [ ] Add some Images or gifs to showcase the project
-- [ ] Sound (Only implemented for SDL currently)
+- [ ] Sound (Implemented for SDL and notcurses)
 - [ ] Add debugging functionality (Small implementation with SDL and imgui for now)
 - [ ] Add support for Octo
 

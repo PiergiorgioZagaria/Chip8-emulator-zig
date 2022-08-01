@@ -8,6 +8,7 @@ pub fn build(b: *std.build.Builder) !void {
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
 
+    // SDL executable
     const emu_sdl = b.addExecutable("emu-sdl", "src/sdl/main.zig");
     emu_sdl.setBuildMode(mode);
     emu_sdl.setTarget(target);
@@ -41,25 +42,31 @@ pub fn build(b: *std.build.Builder) !void {
     const run_emu_sdl_step = b.step("run-sdl", "Runs the chip-8 emulator with sdl");
     run_emu_sdl_step.dependOn(&run_emu_sdl.step);
 
-    // FIXME update the wrapper to latest notcurses
-    // const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
-    // emu_nc.setBuildMode(mode);
-    // emu_nc.setTarget(target);
-    // emu_nc.linkLibC();
-    // emu_nc.linkSystemLibrary("notcurses");
-    // emu_nc.linkSystemLibrary("notcurses-core");
-    // sdk.link(emu_nc, .dynamic);
-    // emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
-    // emu_nc.addPackagePath("emu", "src/chip.zig");
-    // emu_nc.addPackagePath("clap", "zig-clap/clap.zig");
-    // emu_nc.install();
+    // Notcurses executable
+    const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
+    emu_nc.setBuildMode(mode);
+    emu_nc.setTarget(target);
+    sdk.link(emu_nc, .dynamic);
+    emu_nc.addPackage(sdk.getWrapperPackage("sdl2"));
+    emu_nc.linkSystemLibrary("notcurses");
+    emu_nc.linkSystemLibrary("notcurses-core");
+    emu_nc.addPackage(std.build.Pkg{
+        .name = "emu",
+        .source = .{ .path = "src/chip.zig" },
+        .dependencies = &.{.{
+            .name = "clap",
+            .source = .{ .path = "libs/zig-clap/clap.zig" },
+        }},
+    });
+    emu_nc.install();
 
-    // const run_emu_nc = emu_nc.run();
-    // run_emu_nc.step.dependOn(b.getInstallStep());
+    const run_emu_nc = emu_nc.run();
+    run_emu_nc.step.dependOn(b.getInstallStep());
 
-    // const run_emu_nc_step = b.step("run-nc", "Runs the chip-8 emulator");
-    // run_emu_nc_step.dependOn(&run_emu_nc.step);
+    const run_emu_nc_step = b.step("run-nc", "Runs the chip-8 emulator in the terminal");
+    run_emu_nc_step.dependOn(&run_emu_nc.step);
 
+    // Mach executable
     const emu_mach = mach.App.init(b, .{
         .name = "emu-mach",
         .src = "src/mach/main.zig",
@@ -87,6 +94,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     if (b.args) |args| {
         run_emu_sdl.addArgs(args);
+        run_emu_nc.addArgs(args);
         run_emu_mach.addArgs(args);
     }
 }
