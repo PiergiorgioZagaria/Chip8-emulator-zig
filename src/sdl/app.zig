@@ -1,5 +1,5 @@
 const std = @import("std");
-const SDL = @import("sdl2"); // TODO use this one for complete project
+const SDL = @import("sdl2");
 const c = @import("c.zig").c;
 const theme = @import("theme.zig");
 
@@ -56,7 +56,7 @@ pub const App = struct {
             .{ .centered = {} },
             window_width,
             window_height,
-            .{ .shown = true },
+            .{},
         );
         renderer = try SDL.createRenderer(window, null, .{ .present_vsync = true, .accelerated = true });
 
@@ -74,7 +74,7 @@ pub const App = struct {
         // _ = c.ImFontAtlas_Build(io.Fonts);
         io.DisplaySize = .{ .x = @intToFloat(f32, window_width), .y = @intToFloat(f32, window_height) };
         io.DeltaTime = 1.0 / 60.0;
-        // io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
         if (!c.ImGui_ImplSDL2_InitForSDLRenderer(@ptrCast(*c.SDL_Window, window.ptr), @ptrCast(*c.SDL_Renderer, renderer.ptr)))
             std.debug.panic("", .{});
         if (!c.ImGui_ImplSDLRenderer_Init(@ptrCast(*c.SDL_Renderer, renderer.ptr)))
@@ -202,6 +202,10 @@ pub const App = struct {
         c.ImGui_ImplSDLRenderer_NewFrame();
         c.ImGui_ImplSDL2_NewFrame();
         c.igNewFrame();
+
+        // var dockspace_id = c.igGetID_Str("HUB_Dockspace");
+        const viewport = c.igGetMainViewport();
+        _ = c.igDockSpaceOverViewport(viewport, c.ImGuiDockNodeFlags_PassthruCentralNode, c.ImGuiWindowClass_ImGuiWindowClass());
 
         _ = c.igBegin("Emu console", null, c.ImGuiWindowFlags_AlwaysVerticalScrollbar);
         {

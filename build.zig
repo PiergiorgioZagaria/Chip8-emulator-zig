@@ -1,41 +1,45 @@
 const std = @import("std");
+const Sdk = @import("libs/sdl/Sdk.zig");
+const mach = @import("libs/mach/build.zig");
 
-const Sdk = @import("sdl/Sdk.zig");
-
-const Builder = std.build.Builder;
-
-pub fn build(b: *Builder) !void {
+pub fn build(b: *std.build.Builder) !void {
     const sdk = Sdk.init(b);
 
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
 
-    const emu = b.addExecutable("emu", "src/sdl/main.zig");
-    emu.setBuildMode(mode);
-    emu.setTarget(target);
-    sdk.link(emu, .dynamic);
-    emu.addPackage(sdk.getWrapperPackage("sdl2"));
-    emu.addPackagePath("emu", "src/chip.zig");
-    emu.addPackagePath("clap", "zig-clap/clap.zig");
-    emu.install();
-    emu.addCSourceFiles(&[_][]const u8{
-        "imgui/imgui.cpp",
-        "imgui/imgui_draw.cpp",
-        "imgui/imgui_tables.cpp",
-        "imgui/imgui_widgets.cpp",
-        "imgui/imgui_demo.cpp",
-        "imgui/cimgui/imgui_impl_sdl.cpp",
-        "imgui/cimgui/imgui_impl_sdlrenderer.cpp",
-        "imgui/cimgui/cimgui.cpp",
+    const emu_sdl = b.addExecutable("emu-sdl", "src/sdl/main.zig");
+    emu_sdl.setBuildMode(mode);
+    emu_sdl.setTarget(target);
+    sdk.link(emu_sdl, .dynamic);
+    emu_sdl.addPackage(sdk.getWrapperPackage("sdl2"));
+    emu_sdl.addPackage(std.build.Pkg{
+        .name = "emu",
+        .source = .{ .path = "src/chip.zig" },
+        .dependencies = &.{.{
+            .name = "clap",
+            .source = .{ .path = "libs/zig-clap/clap.zig" },
+        }},
+    });
+    emu_sdl.install();
+    emu_sdl.addCSourceFiles(&[_][]const u8{
+        "libs/imgui/imgui.cpp",
+        "libs/imgui/imgui_draw.cpp",
+        "libs/imgui/imgui_tables.cpp",
+        "libs/imgui/imgui_widgets.cpp",
+        "libs/imgui/imgui_demo.cpp",
+        "libs/imgui/imgui_impl_sdl.cpp",
+        "libs/imgui/imgui_impl_sdlrenderer.cpp",
+        "libs/imgui/cimgui/cimgui.cpp",
     }, &.{});
-    emu.linkLibCpp();
-    emu.addIncludePath("imgui");
+    emu_sdl.linkLibCpp();
+    emu_sdl.addIncludePath("libs/imgui");
 
-    const run_emu = emu.run();
-    run_emu.step.dependOn(b.getInstallStep());
+    const run_emu_sdl = emu_sdl.run();
+    run_emu_sdl.step.dependOn(b.getInstallStep());
 
-    const run_emu_step = b.step("run", "Runs the chip-8 emulator");
-    run_emu_step.dependOn(&run_emu.step);
+    const run_emu_sdl_step = b.step("run-sdl", "Runs the chip-8 emulator with sdl");
+    run_emu_sdl_step.dependOn(&run_emu_sdl.step);
 
     // FIXME update the wrapper to latest notcurses
     // const emu_nc = b.addExecutable("emu_nc", "src/notcurses/main.zig");
@@ -55,4 +59,34 @@ pub fn build(b: *Builder) !void {
 
     // const run_emu_nc_step = b.step("run-nc", "Runs the chip-8 emulator");
     // run_emu_nc_step.dependOn(&run_emu_nc.step);
+
+    const emu_mach = mach.App.init(b, .{
+        .name = "emu-mach",
+        .src = "src/mach/main.zig",
+        .target = target,
+        .deps = &.{
+            std.build.Pkg{
+                .name = "emu",
+                .source = .{ .path = "src/chip.zig" },
+                .dependencies = &.{.{
+                    .name = "clap",
+                    .source = .{ .path = "libs/zig-clap/clap.zig" },
+                }},
+            },
+        },
+    });
+    emu_mach.setBuildMode(mode);
+    emu_mach.link(.{});
+    emu_mach.install();
+
+    const run_emu_mach = emu_mach.run();
+    run_emu_mach.step.dependOn(b.getInstallStep());
+
+    const run_emu_mach_step = b.step("run-mach", "Runs the chip-8 emulator with mach");
+    run_emu_mach_step.dependOn(&run_emu_mach.step);
+
+    if (b.args) |args| {
+        run_emu_sdl.addArgs(args);
+        run_emu_mach.addArgs(args);
+    }
 }

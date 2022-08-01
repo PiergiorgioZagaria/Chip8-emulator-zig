@@ -1,81 +1,27 @@
 const std = @import("std");
 const SDL = @import("sdl2");
-const clap = @import("clap");
 
 /// The "engine"
 const App = @import("app.zig").App;
 /// The emulated device
-const Chip = @import("emu").Chip;
+const Chip = @import("emu");
 
 //                 a b g r
 const FG_COLOR = 0xff0000ff;
 const BG_COLOR = 0xff000000;
 
-// TODO Add debugging, change window size, emulator on the left, registers on the right
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    var chip: Chip = try parseArguments();
+    var chip: Chip = undefined;
+    try chip.parseArguments(FG_COLOR, BG_COLOR);
 
     try App.initSDLdefault(arena.allocator());
     defer App.deinitSDL();
 
-    chip.set_chip_keys(App.keys[0..]);
+    chip.setChipKeys(&App.keys);
 
     try runChip(&chip);
-}
-
-fn parseArguments() !Chip {
-    // First we specify what parameters our program can take.
-    // We can use `parseParam` to parse a string to a `Param(Help)`
-    const params = comptime clap.parseParamsComptime(
-        \\-h, --help             Display this help and exit.
-        \\-f, --file <str>       Run the rom on the emulator.
-        \\<str>...
-        \\
-    );
-
-    // Initalize our diagnostics, which can be used for reporting useful errors.
-    var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
-        .diagnostic = &diag,
-    }) catch |err| {
-        // Report useful error and exit
-        diag.report(std.io.getStdErr().writer(), err) catch {};
-        return err;
-    };
-    defer res.deinit();
-
-    if (res.args.help) {
-        try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
-        std.process.exit(0);
-        return undefined;
-    }
-    if (res.args.file) |f| {
-        return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
-            std.log.err("Caught {} during initialization.\n", .{err});
-            try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
-            return err;
-        };
-    }
-    if (res.positionals.len == 1) {
-        for (res.positionals) |f| {
-            return Chip.init(f, FG_COLOR, BG_COLOR) catch |err| {
-                std.log.err("Caught {} during initialization.\n", .{err});
-                try clap.help(std.io.getStdErr().writer(), clap.Help, &params);
-                return err;
-            };
-        }
-    }
-    return try Chip.init("roms/IBM Logo.ch8", FG_COLOR, BG_COLOR);
-    // var chip: Chip = try Chip.init("roms/test_opcode.ch8");
-    // var chip: Chip = try Chip.init("roms/BC_test.ch8");
-    // var chip: Chip = try Chip.init("roms/PONG");
-    // var chip: Chip = try Chip.init("roms/CAVE");
-    // var chip: Chip = try Chip.init("roms/Maze");
-    // var chip: Chip = try Chip.init("roms/TANK");
-    // var chip: Chip = try Chip.init("roms/TETRIS");
-    // var chip: Chip = try Chip.init("roms/test.ch8");
 }
 
 fn runChip(chip: *Chip) !void {

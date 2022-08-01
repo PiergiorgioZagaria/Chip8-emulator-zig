@@ -1,19 +1,17 @@
 * A chip8 emulator (interpreter) written in zig
 ** Notes
 The sound may not be well implemented, I ported it from another emulator
-At the moment it can render using a window with SDL or to the terminal (only kitty and other terminals that implement its keyboard protocol) using notcurses
-Tested with zig version 0.9.0-dev.1551+8346e011c and notcurses version 2.4.7-1
+Tested with zig version 0.10.0-dev.3051+b8bf5de75
+
 ** Usage
-Build using =zig build -Drelease-fast= or without release fast, than run =./zig-out/bin/emu <PATH TO ROM>=
+Build and run with =zig build run-[sdl/mach] -- "<Path to ROM>"=
 
 ** TODOS
-- [-] Input for notcurses
-- [-] Sound
+- [ ] Rewrite notcurses api
+- [-] Sound (Only for SDL)
 - [ ] Add some Images or gifs to showcase the project
-- [ ] Add debugging functionality
-- [ ] Add support for Octo or other
-- [ ] Target Web
-- [ ] Target Android
+- [-] Add debugging functionality (Small implementation with SDL and imgui)
+- [ ] Add support for Octo
 
 ** Dependencies
 - [[https://ziglang.org/][zig]]
@@ -21,6 +19,7 @@ Build using =zig build -Drelease-fast= or without release fast, than run =./zig-
 - [[https://github.com/MasterQ32/SDL.zig][SDL.zig]]
 - [[https://www.libsdl.org/index.php][SDL]]
 - [[https://github.com/dankamongmen/notcurses][notcurses]]
+- [[https://https://github.com/hexops/mach][mach]]
 
 ** You can find some roms here
 - test-opcode.ch8 [[https://github.com/corax89/chip8-test-rom]]
