@@ -7,7 +7,7 @@ Tested with zig version 0.10.0-dev.3383+3cf8f283d
 Build and run with `zig build run-[sdl/mach/nc] -- "<Path to ROM>"`
 
 ## Showoff
-![](showoff/Mach\ bon\ coder.png)
+![](showoff/Mach_bon_coder.png)
 ![](showoff/Notcurses_pong.png)
 ![](showoff/SDL_Invaders.png)
 
