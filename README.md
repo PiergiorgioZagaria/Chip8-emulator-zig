@@ -6,6 +6,11 @@ Tested with zig version 0.10.0-dev.3383+3cf8f283d
 ## Usage
 Build and run with `zig build run-[sdl/mach/nc] -- "<Path to ROM>"`
 
+## Showoff
+![](showoff/Mach\ bon\ coder.png)
+![](showoff/Notcurses_pong.png)
+![](showoff/SDL_Invaders.png)
+
 ## TODOS
 - [ ] Add some Images or gifs to showcase the project
 - [ ] Sound (Implemented for SDL and notcurses)

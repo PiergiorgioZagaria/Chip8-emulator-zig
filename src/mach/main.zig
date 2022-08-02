@@ -32,6 +32,7 @@ pub fn init(app: *App, core: *mach.Core) !void {
 
     app.chip_thread = try std.Thread.spawn(.{}, struct {
         fn callback(chip: *Chip, should_close: *bool) void {
+            chip.rand = std.rand.Xoroshiro128.init(@bitCast(u64, std.time.milliTimestamp())).random();
             while (!should_close.*) {
                 chip.cycle() catch |err| {
                     should_close.* = true;
@@ -164,6 +165,7 @@ pub fn update(app: *App, core: *mach.Core) !void {
                     else => {},
                 }
             },
+            .closed => app.should_close = true,
             else => {},
         }
     }
