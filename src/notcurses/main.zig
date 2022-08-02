@@ -12,6 +12,7 @@ pub fn main() !void {
 
     var chip: Chip = undefined;
     try chip.parseArguments(FG_COLOR, BG_COLOR);
+    chip.initRand();
 
     try App.new(&chip.display, arena.allocator());
     defer App.stop() catch unreachable;

@@ -56,10 +56,14 @@ pub fn init(chip: *Chip, file: []const u8, fg_color: u32, bg_color: u32) !void {
         .fg_color_prev = fg_color,
         .bg_color = bg_color,
         .bg_color_prev = bg_color,
-        .rand = std.rand.Xoroshiro128.init(@intCast(u64, std.time.nanoTimestamp())).random(),
+        .rand = undefined,
     };
     _ = try std.fs.cwd().readFile(file, chip.memory[0x200..]);
     std.mem.set(u32, &chip.display, bg_color);
+}
+
+pub fn initRand(chip: *Chip) void {
+    chip.rand = std.rand.Xoroshiro128.init(@bitCast(u64, std.time.milliTimestamp())).random();
 }
 
 pub fn parseArguments(chip: *Chip, fg_color: u32, bg_color: u32) !void {

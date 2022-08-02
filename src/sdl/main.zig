@@ -15,6 +15,7 @@ pub fn main() !void {
     defer arena.deinit();
     var chip: Chip = undefined;
     try chip.parseArguments(FG_COLOR, BG_COLOR);
+    chip.initRand();
 
     try App.initSDLdefault(arena.allocator());
     defer App.deinitSDL();

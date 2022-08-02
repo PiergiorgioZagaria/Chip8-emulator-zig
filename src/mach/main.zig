@@ -175,7 +175,6 @@ pub fn update(app: *App, core: *mach.Core) !void {
         app.chip.delay_timer -= 1;
     if (app.chip.sound_timer > 0)
         app.chip.sound_timer -= 1;
-    try app.chip.cycle();
 
     const back_buffer_view = core.swap_chain.?.getCurrentTextureView();
     const color_attachment = gpu.RenderPassColorAttachment{
