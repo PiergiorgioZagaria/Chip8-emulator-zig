@@ -24,6 +24,7 @@ Build and run with `zig build run-[sdl/mach/nc] -- "<Path to ROM>"`
 - [SDL](https://www.libsdl.org/index.php)
 - [notcurses](https://github.com/dankamongmen/notcurses)
 - [mach](https://github.com/hexops/mach)
+- [cimgui](https://github.com/cimgui/cimgui)
 
 ## You can find some roms here
 - [test-opcode.ch8](https://github.com/corax89/chip8-test-rom)

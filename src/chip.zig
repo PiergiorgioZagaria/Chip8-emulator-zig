@@ -139,7 +139,10 @@ pub fn cycle(self: *Chip) ChipError!void {
             } else if (opcode == 0x00ee) {
                 // Return from subroutine
                 self.pc = self.stack.pop();
+            } else if (opcode == 0x0000) {
+                std.debug.print("NOP\n", .{});
             } else {
+                std.debug.print("OPCODE {x}\n", .{opcode});
                 return error.NotImplementedError;
             }
         },
